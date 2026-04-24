@@ -1,0 +1,27 @@
+{
+  "name": "topicpress",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.5.0",
+  "scripts": {
+    "dev": "turbo dev --parallel",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "format": "prettier --check .",
+    "format:write": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/js": "^9.25.1",
+    "eslint-config-next": "^15.3.1",
+    "@types/node": "^22.15.2",
+    "eslint": "^9.25.1",
+    "prettier": "^3.5.3",
+    "tsx": "^4.19.4",
+    "turbo": "^2.5.2",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.31.0"
+  }
+}
