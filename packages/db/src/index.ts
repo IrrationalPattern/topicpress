@@ -1,1 +1,1 @@
-export const dbPackageName = "@topicpress/db";
+export * from "./schema/index.js";

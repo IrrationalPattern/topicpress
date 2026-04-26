@@ -16,5 +16,8 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2"
   }
 }
