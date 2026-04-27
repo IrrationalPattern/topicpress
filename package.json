@@ -9,6 +9,7 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
+    "seed:sync": "pnpm --filter @topicpress/worker seed:sync",
     "supabase:telemetry:disable": "supabase telemetry disable",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",

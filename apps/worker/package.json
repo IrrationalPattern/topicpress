@@ -7,15 +7,22 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "dev": "tsx src/index.ts",
+    "seed:sync": "tsx src/seed-sync.cli.ts",
     "build": "tsc -p tsconfig.json",
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"No tests configured for @topicpress/worker yet.\""
+    "test": "tsc -p tsconfig.json && node test/seed-sync.test.mjs"
   },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
+  },
+  "dependencies": {
+    "@topicpress/config": "workspace:*",
+    "@topicpress/db": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.7"
   }
 }

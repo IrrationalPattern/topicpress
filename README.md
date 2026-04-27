@@ -73,4 +73,14 @@ pnpm lint
 pnpm build
 ```
 
+Sync the repo-owned source and category config into the local database:
+
+```powershell
+pnpm seed:sync
+```
+
+The seed sync upserts by stable `config_key` values and marks missing configured rows inactive by default instead of deleting them. Use `pnpm --filter @topicpress/worker seed:sync -- --keep-missing-active` only when inspecting local data without changing inactive state.
+
+Changing a source or category `config_key` creates a new identity. If the renamed entry keeps a slug or feed URL already owned by the old row, sync fails clearly instead of merging history across identities.
+
 If Docker is not running, default Supabase ports are unavailable, or local package installation is blocked, record the exact blocker instead of substituting remote credentials.
