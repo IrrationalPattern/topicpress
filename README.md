@@ -87,9 +87,11 @@ Run the M2 ingestion worker after migrations and seed sync have prepared the loc
 
 ```powershell
 pnpm ingest
-pnpm ingest -- --force
-pnpm ingest -- --json
+pnpm ingest --force
+pnpm ingest --json
 ```
+
+The worker CLI also tolerates pnpm's forwarded separator form, such as `pnpm ingest -- --json`, for compatibility with older handoff notes.
 
 The command writes aggregate and per-source `ingest` rows to `pipeline_runs`, persists normalized feed items idempotently, and exits non-zero when no active source can be ingested successfully.
 

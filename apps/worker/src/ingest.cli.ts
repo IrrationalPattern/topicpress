@@ -1,9 +1,11 @@
+import { pathToFileURL } from "node:url";
+
 import { createDatabaseClient } from "./database.js";
 import { runIngestion, type IngestionRunSummary } from "./ingestion-run.js";
 
 async function main(): Promise<void> {
+  const options = parseIngestCliArgs(process.argv.slice(2));
   const { db, close } = createDatabaseClient();
-  const options = parseArgs(process.argv.slice(2));
 
   try {
     const result = await runIngestion(db, { force: options.force });
@@ -20,10 +22,14 @@ async function main(): Promise<void> {
   }
 }
 
-function parseArgs(args: readonly string[]): { readonly force: boolean; readonly json: boolean } {
+export function parseIngestCliArgs(args: readonly string[]): {
+  readonly force: boolean;
+  readonly json: boolean;
+} {
   const options = { force: false, json: false };
+  const forwardedArgs = args[0] === "--" ? args.slice(1) : args;
 
-  args.forEach((arg) => {
+  forwardedArgs.forEach((arg) => {
     if (arg === "--force") {
       options.force = true;
       return;
@@ -61,12 +67,14 @@ function logSummary(summary: IngestionRunSummary): void {
   }
 }
 
-main().catch((error: unknown) => {
-  if (error instanceof Error) {
-    console.error(error.message);
-  } else {
-    console.error(error);
-  }
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error: unknown) => {
+    if (error instanceof Error) {
+      console.error(error.message);
+    } else {
+      console.error(error);
+    }
 
-  process.exitCode = 1;
-});
+    process.exitCode = 1;
+  });
+}
