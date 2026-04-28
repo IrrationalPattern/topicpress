@@ -6,9 +6,8 @@ import {
   markSourceFetchFailedWithStore,
   persistNormalizedSourceItemsWithStore,
 } from "../dist/source-item-persistence.js";
+import { secondSourceId, sourceId } from "./support/source-fixtures.mjs";
 
-const sourceId = "00000000-0000-0000-0000-000000000001";
-const secondSourceId = "00000000-0000-0000-0000-000000000002";
 const fetchedAt = new Date("2026-04-28T12:00:00.000Z");
 const now = new Date("2026-04-28T12:05:00.000Z");
 

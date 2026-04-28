@@ -7,28 +7,14 @@ import {
   selectActiveFeedSources,
 } from "../dist/feed-ingestion.js";
 import { defaultIngestionPolicy } from "../dist/ingestion-policy.js";
+import { httpClient } from "./support/feed-fixtures.mjs";
+import { feedSource as source } from "./support/source-fixtures.mjs";
 
 const now = new Date("2026-04-28T12:00:00.000Z");
 const noWaitPolicy = {
   ...defaultIngestionPolicy,
   retryBackoffMs: [0, 0],
 };
-
-function source(overrides = {}) {
-  return {
-    id: "00000000-0000-0000-0000-000000000001",
-    configKey: "fixture_source",
-    kind: "rss",
-    feedUrl: "https://example.test/feed.xml",
-    language: "en",
-    isActive: true,
-    ...overrides,
-  };
-}
-
-function httpClient(body, status = 200) {
-  return async () => ({ status, body });
-}
 
 test("RSS entries normalize into source item candidates and skip stale items", async () => {
   const rss = `<?xml version="1.0"?>

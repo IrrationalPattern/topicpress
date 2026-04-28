@@ -4,6 +4,8 @@ import { test } from "node:test";
 import { SourceItemPersistenceError } from "../dist/source-item-persistence.js";
 import { defaultIngestionPolicy } from "../dist/ingestion-policy.js";
 import { runIngestionWithStore } from "../dist/ingestion-run.js";
+import { httpClient, rssFeed, rssItem } from "./support/feed-fixtures.mjs";
+import { ingestionSource as source, secondSourceId, sourceId } from "./support/source-fixtures.mjs";
 
 const now = new Date("2026-04-29T08:00:00.000Z");
 const noWaitPolicy = {
@@ -246,45 +248,6 @@ test("persistence failures are source-level failures with item conflict counts",
   assert.equal(result.summary.failures[0].errorClass, "persistence");
   assert.equal(store.pipelineRuns.find((run) => run.sourceId === sourceId).payload.candidates, 1);
 });
-
-const sourceId = "00000000-0000-0000-0000-000000000001";
-const secondSourceId = "00000000-0000-0000-0000-000000000002";
-
-function source(overrides = {}) {
-  return {
-    id: sourceId,
-    configKey: "fixture_source",
-    name: "Fixture Source",
-    kind: "rss",
-    feedUrl: "https://example.test/feed.xml",
-    language: "en",
-    isActive: true,
-    lastFetchedAt: null,
-    lastErrorAt: null,
-    lastErrorMessage: null,
-    ...overrides,
-  };
-}
-
-function httpClient(responses) {
-  return async (url) => {
-    const body = responses[url];
-
-    if (body === undefined) {
-      throw new Error(`Unexpected URL ${url}`);
-    }
-
-    return { status: 200, body };
-  };
-}
-
-function rssFeed(items) {
-  return `<?xml version="1.0"?><rss version="2.0"><channel>${items.join("")}</channel></rss>`;
-}
-
-function rssItem(guid, title, link, publishedAt = "Tue, 28 Apr 2026 10:00:00 GMT") {
-  return `<item><guid>${guid}</guid><title>${title}</title><link>${link}</link><pubDate>${publishedAt}</pubDate></item>`;
-}
 
 function historyRun(overrides = {}) {
   return {
