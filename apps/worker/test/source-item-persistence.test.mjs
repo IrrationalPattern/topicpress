@@ -33,25 +33,21 @@ test("duplicate source GUID reruns update one source item instead of inserting",
   assert.equal(store.items[0].title, "Renamed Item");
 });
 
-test("duplicate external URLs are matched globally without moving source ownership", async () => {
-  const store = createMemoryStore({
-    sources: [source(), source({ id: secondSourceId, configKey: "other_source" })],
-  });
+test("duplicate external URLs from the same source update one source item", async () => {
+  const store = createMemoryStore();
 
   await persistNormalizedSourceItemsWithStore(
     store,
-    [candidate({ externalGuid: "source-a-guid", externalUrl: "https://example.test/shared" })],
+    [candidate({ externalGuid: "source-guid-1", externalUrl: "https://example.test/shared" })],
     { now },
   );
   const result = await persistNormalizedSourceItemsWithStore(
     store,
     [
       candidate({
-        sourceId: secondSourceId,
-        source: source({ id: secondSourceId, configKey: "other_source" }),
-        externalGuid: "source-b-guid",
+        externalGuid: "source-guid-2",
         externalUrl: "https://example.test/shared",
-        title: "Shared URL From Other Source",
+        title: "Shared URL From Same Source",
       }),
     ],
     { now },
@@ -61,7 +57,60 @@ test("duplicate external URLs are matched globally without moving source ownersh
   assert.equal(result.matchedByExternalUrl, 1);
   assert.equal(store.items.length, 1);
   assert.equal(store.items[0].sourceId, sourceId);
-  assert.equal(store.items[0].title, "Shared URL From Other Source");
+  assert.equal(store.items[0].externalGuid, "source-guid-2");
+  assert.equal(store.items[0].title, "Shared URL From Same Source");
+});
+
+test("cross-source duplicate external URLs fail without corrupting source provenance", async () => {
+  const otherSource = source({
+    id: secondSourceId,
+    configKey: "other_source",
+    feedUrl: "https://other.example.test/feed.xml",
+  });
+  const store = createMemoryStore({
+    sources: [source(), otherSource],
+  });
+
+  await persistNormalizedSourceItemsWithStore(
+    store,
+    [
+      candidate({
+        externalGuid: "source-a-guid",
+        externalUrl: "https://example.test/shared",
+        title: "Source A Shared URL",
+        rawPayload: { source: "A" },
+        contentHash: "source-a-hash",
+      }),
+    ],
+    { now },
+  );
+
+  await assert.rejects(
+    () =>
+      persistNormalizedSourceItemsWithStore(
+        store,
+        [
+          candidate({
+            sourceId: secondSourceId,
+            source: otherSource,
+            externalGuid: "source-b-guid",
+            externalUrl: "https://example.test/shared",
+            title: "Source B Shared URL",
+            rawPayload: { source: "B" },
+            contentHash: "source-b-hash",
+          }),
+        ],
+        { now },
+      ),
+    SourceItemPersistenceError,
+  );
+
+  assert.equal(store.items.length, 1);
+  assert.equal(store.items[0].sourceId, sourceId);
+  assert.equal(store.items[0].externalGuid, "source-a-guid");
+  assert.equal(store.items[0].title, "Source A Shared URL");
+  assert.deepEqual(store.items[0].rawPayload, { source: "A" });
+  assert.equal(store.items[0].contentHash, "source-a-hash");
 });
 
 test("duplicate source content hashes use lookup behavior without creating duplicates", async () => {
@@ -96,6 +145,50 @@ test("duplicate source content hashes use lookup behavior without creating dupli
   assert.equal(store.items[0].externalUrl, "https://example.test/copy");
 });
 
+test("cross-source duplicate content hashes keep separate source item provenance", async () => {
+  const otherSource = source({
+    id: secondSourceId,
+    configKey: "other_source",
+    feedUrl: "https://other.example.test/feed.xml",
+  });
+  const store = createMemoryStore({
+    sources: [source(), otherSource],
+  });
+
+  await persistNormalizedSourceItemsWithStore(
+    store,
+    [
+      candidate({
+        externalGuid: undefined,
+        externalUrl: "https://example.test/source-a-copy",
+        contentHash: "shared-content-hash",
+      }),
+    ],
+    { now },
+  );
+  const result = await persistNormalizedSourceItemsWithStore(
+    store,
+    [
+      candidate({
+        sourceId: secondSourceId,
+        source: otherSource,
+        externalGuid: undefined,
+        externalUrl: "https://other.example.test/source-b-copy",
+        contentHash: "shared-content-hash",
+      }),
+    ],
+    { now },
+  );
+
+  assert.equal(result.inserted, 1);
+  assert.equal(result.matchedByContentHash, 0);
+  assert.equal(store.items.length, 2);
+  assert.equal(store.items[0].sourceId, sourceId);
+  assert.equal(store.items[1].sourceId, secondSourceId);
+  assert.equal(store.items[0].contentHash, "shared-content-hash");
+  assert.equal(store.items[1].contentHash, "shared-content-hash");
+});
+
 test("same candidate rerun is unchanged, while content changes update in place", async () => {
   const store = createMemoryStore();
   const item = candidate({ externalGuid: "stable-guid" });
@@ -126,6 +219,55 @@ test("unknown source identity fails before inserting source items", async () => 
           candidate({
             sourceId: undefined,
             source: source({ id: undefined, configKey: "missing_source" }),
+          }),
+        ],
+        { now },
+      ),
+    SourceItemPersistenceError,
+  );
+  assert.equal(store.items.length, 0);
+});
+
+test("mismatched candidate source id and source identity fails before inserting", async () => {
+  const otherSource = source({
+    id: secondSourceId,
+    configKey: "other_source",
+    feedUrl: "https://other.example.test/feed.xml",
+  });
+  const store = createMemoryStore({
+    sources: [source(), otherSource],
+  });
+
+  await assert.rejects(
+    () =>
+      persistNormalizedSourceItemsWithStore(
+        store,
+        [
+          candidate({
+            sourceId,
+            source: otherSource,
+            externalUrl: "https://other.example.test/mismatch",
+          }),
+        ],
+        { now },
+      ),
+    SourceItemPersistenceError,
+  );
+  assert.equal(store.items.length, 0);
+});
+
+test("unknown source id fails before falling back to source identity", async () => {
+  const store = createMemoryStore();
+
+  await assert.rejects(
+    () =>
+      persistNormalizedSourceItemsWithStore(
+        store,
+        [
+          candidate({
+            sourceId: secondSourceId,
+            source: source(),
+            externalUrl: "https://example.test/unknown-id",
           }),
         ],
         { now },
@@ -270,8 +412,13 @@ function createMemoryStore(overrides = {}) {
         const rowById = sources.find((row) => row.id === itemCandidate.sourceId);
 
         if (rowById !== undefined) {
+          validateMemorySourceIdentity(rowById, itemCandidate.source);
           return rowById;
         }
+
+        throw new SourceItemPersistenceError(
+          `Cannot persist source items for unknown source id "${itemCandidate.sourceId}".`,
+        );
       }
 
       return tx.resolveSourceByIdentity(itemCandidate.source);
@@ -285,11 +432,7 @@ function createMemoryStore(overrides = {}) {
         );
       }
 
-      if (row.kind !== sourceIdentity.kind || row.feedUrl !== sourceIdentity.feedUrl) {
-        throw new SourceItemPersistenceError(
-          `Source identity mismatch for config key "${sourceIdentity.configKey}".`,
-        );
-      }
+      validateMemorySourceIdentity(row, sourceIdentity);
 
       return row;
     },
@@ -376,6 +519,19 @@ function createMemoryStore(overrides = {}) {
     items,
     transaction: async (callback) => callback(tx),
   };
+}
+
+function validateMemorySourceIdentity(row, sourceIdentity) {
+  if (
+    row.configKey !== sourceIdentity.configKey ||
+    row.kind !== sourceIdentity.kind ||
+    row.feedUrl !== sourceIdentity.feedUrl ||
+    row.language !== sourceIdentity.language
+  ) {
+    throw new SourceItemPersistenceError(
+      `Source identity mismatch for config key "${sourceIdentity.configKey}".`,
+    );
+  }
 }
 
 function addMemoryMatches(matches, rows, matchType) {

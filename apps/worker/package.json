@@ -7,11 +7,12 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "dev": "tsx src/index.ts",
+    "ingest": "tsx src/ingest.cli.ts",
     "seed:sync": "tsx src/seed-sync.cli.ts",
     "build": "tsc -p tsconfig.json",
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "test": "tsc -p tsconfig.json && node test/seed-sync.test.mjs && node test/feed-ingestion.test.mjs && node test/source-item-persistence.test.mjs"
+    "test": "tsc -p tsconfig.json && node test/seed-sync.test.mjs && node test/feed-ingestion.test.mjs && node test/source-item-persistence.test.mjs && node test/ingestion-run.test.mjs"
   },
   "exports": {
     ".": {

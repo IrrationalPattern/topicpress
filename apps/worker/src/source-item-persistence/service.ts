@@ -15,6 +15,7 @@ import type {
   SourceItemPersistenceStore,
   SourceItemPersistenceTransaction,
 } from "./types.js";
+import { SourceItemPersistenceError } from "./types.js";
 
 export async function persistNormalizedSourceItems(
   db: TopicpressDatabase,
@@ -127,6 +128,12 @@ async function persistOneSourceItem(
     const insertedRow = await tx.insertSourceItem(values);
 
     return { itemId: insertedRow.id, action: "inserted", matchType: null };
+  }
+
+  if (match.row.sourceId !== values.sourceId) {
+    throw new SourceItemPersistenceError(
+      `Source item identity conflict for external URL "${values.externalUrl}": existing item belongs to source "${match.row.sourceId}" but candidate belongs to source "${values.sourceId}".`,
+    );
   }
 
   const mergedValues = mergeSourceItemValues(match.row, values);

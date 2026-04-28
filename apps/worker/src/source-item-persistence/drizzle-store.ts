@@ -96,8 +96,13 @@ async function resolveSourceIdentity(
     const row = sourceById[0];
 
     if (row !== undefined) {
+      validateSourceIdentity(row, candidate.source);
       return row;
     }
+
+    throw new SourceItemPersistenceError(
+      `Cannot persist source items for unknown source id "${candidate.sourceId}".`,
+    );
   }
 
   return resolveSourceByIdentity(db, candidate.source);
@@ -126,13 +131,22 @@ async function resolveSourceByIdentity(
     );
   }
 
-  if (row.kind !== source.kind || row.feedUrl !== source.feedUrl) {
+  validateSourceIdentity(row, source);
+
+  return row;
+}
+
+function validateSourceIdentity(row: SourceIdentityRow, source: FeedSourceIdentity): void {
+  if (
+    row.configKey !== source.configKey ||
+    row.kind !== source.kind ||
+    row.feedUrl !== source.feedUrl ||
+    row.language !== source.language
+  ) {
     throw new SourceItemPersistenceError(
       `Source identity mismatch for config key "${source.configKey}".`,
     );
   }
-
-  return row;
 }
 
 async function findExistingSourceItemMatch(

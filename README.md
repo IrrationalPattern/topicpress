@@ -83,4 +83,14 @@ The seed sync upserts by stable `config_key` values and marks missing configured
 
 Changing a source or category `config_key` creates a new identity. If the renamed entry keeps a slug or feed URL already owned by the old row, sync fails clearly instead of merging history across identities.
 
+Run the M2 ingestion worker after migrations and seed sync have prepared the local database:
+
+```powershell
+pnpm ingest
+pnpm ingest -- --force
+pnpm ingest -- --json
+```
+
+The command writes aggregate and per-source `ingest` rows to `pipeline_runs`, persists normalized feed items idempotently, and exits non-zero when no active source can be ingested successfully.
+
 If Docker is not running, default Supabase ports are unavailable, or local package installation is blocked, record the exact blocker instead of substituting remote credentials.
