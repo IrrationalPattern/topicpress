@@ -11,7 +11,7 @@
     "build": "tsc -p tsconfig.json",
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "test": "tsc -p tsconfig.json && node test/seed-sync.test.mjs"
+    "test": "tsc -p tsconfig.json && node test/seed-sync.test.mjs && node test/feed-ingestion.test.mjs && node test/source-item-persistence.test.mjs"
   },
   "exports": {
     ".": {
