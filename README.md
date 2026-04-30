@@ -138,10 +138,41 @@ For M2 QA, a successful fixture-backed or controlled local run should prove:
 
 Live public-feed smoke is optional. Public feed availability, shape, and network access can change, so live-feed failure should not be the sole M2 QA gate when deterministic fixture-backed worker tests and controlled local ingestion pass.
 
+## M3 Local Cluster And Draft Verification
+
+M3 extends the verified M2 path: local Supabase, tracked migrations, seed sync, ingestion, then the worker cluster/generate command. The default QA path is deterministic and fixture-backed; live AI is optional and must be explicitly env-gated when a live adapter/command supports it. Do not put API keys, generated Supabase credentials, database passwords, production URLs, or private feed credentials in repo files or vault notes.
+
+BE-303 exposes the local M3 worker command as `cluster:generate` in `apps/worker/package.json`. There is currently no root `cluster:generate` alias, so run it through the worker filter.
+
+Required QA-308 path from a clean local database:
+
+```powershell
+pnpm supabase:start
+pnpm db:reset
+pnpm db:migrate
+pnpm db:check
+pnpm seed:sync
+pnpm ingest --force --json
+pnpm --filter @topicpress/worker cluster:generate -- --json --limit 5
+```
+
+The documented `cluster:generate` CLI currently exposes `--json` and `--limit`; it does not expose a live-AI flag. Keep this command in fixture/default mode for QA. `--limit 5` bounds the local M3 run while still proving the command can cluster eligible source items and generate reviewable drafts.
+
+Required QA-308 evidence:
+
+- Clustering consumes active, normalized local `source_items` and creates durable `story_clusters` plus `story_cluster_items`.
+- Draft generation creates exactly one reviewable `articles` row for an eligible cluster, with primary-locale localization, SEO fields, configured category, generation metadata, and article-source lineage.
+- Re-running generation for an already article-backed cluster is idempotent and does not create a duplicate article.
+- `pipeline_runs` records M3 `cluster` and `generate` visibility for success, no-op/idempotent, and failure cases without storing secrets.
+- Generated content remains in review flow only; M3 must not publish, render public pages, add schedulers, or introduce queue infrastructure.
+
+Live AI is not required for M3 closure, and the documented BE-303 command does not require provider credentials. Document live provider keys only in placeholder form and only after a future command or live adapter actually supports them.
+
 Advisory local checks:
 
 ```powershell
 pnpm --filter @topicpress/worker test
+pnpm --filter @topicpress/ai test
 pnpm --filter @topicpress/worker typecheck
 pnpm --filter @topicpress/worker lint
 pnpm --filter @topicpress/worker build
@@ -150,8 +181,8 @@ pnpm lint
 pnpm test
 ```
 
-`pnpm db:diff:local` is useful as an advisory schema-drift check, but it is a known non-blocking Windows Docker shadow database issue in this workspace. Do not block M2 ingestion if `pnpm db:reset`, `pnpm db:migrate`, `pnpm db:check`, seed sync, worker tests, and ingestion verification pass.
+`pnpm db:diff:local` is useful as an advisory schema-drift check, but it is a known non-blocking Windows Docker shadow database issue in this workspace. Do not block local M2/M3 verification if `pnpm db:reset`, `pnpm db:migrate`, `pnpm db:check`, seed sync, focused worker/AI tests, ingestion, and cluster/generate verification pass.
 
-Root `pnpm build` currently has a known unrelated web build hang in this Windows workspace. Prefer `pnpm --filter @topicpress/worker build` for M2 ingestion verification unless the ingestion change touches `apps/web` or shared build behavior.
+Root `pnpm build` currently has a known unrelated web build hang in this Windows workspace. Prefer focused worker/AI builds for M2/M3 verification unless the change touches `apps/web` or shared build behavior.
 
 If Docker is not running, default Supabase ports are unavailable, or local package installation is blocked, record the exact blocker instead of substituting remote credentials.
