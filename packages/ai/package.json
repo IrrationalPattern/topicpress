@@ -9,12 +9,15 @@
     "build": "tsc -p tsconfig.json",
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"No tests configured for @topicpress/ai yet.\""
+    "test": "tsc -p tsconfig.json && node test/draft-generation.test.mjs"
   },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
+  },
+  "dependencies": {
+    "@topicpress/config": "workspace:*"
   }
 }
