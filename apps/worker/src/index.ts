@@ -3,6 +3,7 @@ import { pathToFileURL } from "node:url";
 export * from "./feed-ingestion.js";
 export * from "./feed-types.js";
 export * from "./clustering.js";
+export * from "./draft-creation.js";
 export * from "./ingestion-run.js";
 export * from "./ingestion-policy.js";
 export * from "./source-item-persistence.js";

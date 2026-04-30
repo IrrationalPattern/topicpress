@@ -63,6 +63,7 @@ export async function generateArticleDraft(
   });
 
   return validateArticleDraft(rawDraft, {
+    input,
     siteConfig,
     locale: input.locale,
   });

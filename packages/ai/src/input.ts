@@ -8,12 +8,13 @@ import type {
 import { assertSupportedLocale, DraftValidationInputError, findActiveDraftCategory } from "./utils.js";
 
 export function buildArticleGenerationInput(
-  source: ArticleSourceInput,
+  sourceItems: ArticleSourceInput | readonly ArticleSourceInput[],
   options: ArticleGenerationInputOptions & { readonly siteConfig?: SiteConfig } = {},
 ): ArticleGenerationInput {
   const config = options.siteConfig ?? defaultSiteConfig;
   const locale = options.locale ?? config.locales.defaultLocale;
-  const issues = collectSourceIssues(source);
+  const sourceItemList = Array.isArray(sourceItems) ? [...sourceItems] : [sourceItems];
+  const issues = collectClusterIssues(sourceItemList, options);
 
   try {
     assertSupportedLocale(config, locale);
@@ -40,9 +41,18 @@ export function buildArticleGenerationInput(
     throw new DraftValidationInputError(issues);
   }
 
+  const normalizedSourceItems = sourceItemList
+    .map((source) => normalizeSource(source))
+    .sort((left, right) => left.sourceItemId.localeCompare(right.sourceItemId));
+  const sourceItemIds = normalizedSourceItems.map((source) => source.sourceItemId);
+  const primarySourceItemId = options.primarySourceItemId ?? sourceItemIds[0] ?? "";
+
   return {
     locale,
-    source: normalizeSource(source),
+    storyClusterId: options.storyClusterId?.trim() ?? "",
+    primarySourceItemId,
+    sourceItemIds,
+    sourceItems: normalizedSourceItems,
     ...(options.categoryHint !== undefined ? { categoryHint: options.categoryHint } : {}),
     keywordHints,
   };
@@ -50,6 +60,7 @@ export function buildArticleGenerationInput(
 
 function normalizeSource(source: ArticleSourceInput): ArticleSourceInput {
   const normalized = {
+    sourceItemId: source.sourceItemId.trim(),
     sourceName: source.sourceName.trim(),
     title: source.title.trim(),
     url: source.url.trim(),
@@ -64,33 +75,76 @@ function normalizeSource(source: ArticleSourceInput): ArticleSourceInput {
   };
 }
 
-function collectSourceIssues(source: ArticleSourceInput): string[] {
+function collectClusterIssues(
+  sourceItems: readonly ArticleSourceInput[],
+  options: ArticleGenerationInputOptions,
+): string[] {
+  const issues: string[] = [];
+  const sourceItemIds = new Set<string>();
+  const primarySourceItemId = options.primarySourceItemId?.trim();
+
+  if (!hasText(options.storyClusterId)) {
+    issues.push("storyClusterId: expected non-empty string");
+  }
+
+  if (sourceItems.length === 0) {
+    issues.push("sourceItems: expected non-empty array");
+  }
+
+  sourceItems.forEach((source, index) => {
+    issues.push(...collectSourceIssues(source, `sourceItems[${index}]`));
+
+    if (hasText(source.sourceItemId)) {
+      const sourceItemId = source.sourceItemId.trim();
+
+      if (sourceItemIds.has(sourceItemId)) {
+        issues.push(`sourceItems[${index}].sourceItemId: duplicate source item id "${sourceItemId}"`);
+      }
+
+      sourceItemIds.add(sourceItemId);
+    }
+  });
+
+  if (primarySourceItemId !== undefined && !sourceItemIds.has(primarySourceItemId)) {
+    issues.push(
+      `primarySourceItemId: expected one of provided source item ids, received "${primarySourceItemId}"`,
+    );
+  }
+
+  return issues;
+}
+
+function collectSourceIssues(source: ArticleSourceInput, path: string): string[] {
   const issues: string[] = [];
 
+  if (!hasText(source.sourceItemId)) {
+    issues.push(`${path}.sourceItemId: expected non-empty string`);
+  }
+
   if (!hasText(source.sourceName)) {
-    issues.push("source.sourceName: expected non-empty string");
+    issues.push(`${path}.sourceName: expected non-empty string`);
   }
 
   if (!hasText(source.title)) {
-    issues.push("source.title: expected non-empty string");
+    issues.push(`${path}.title: expected non-empty string`);
   }
 
   if (!hasText(source.url)) {
-    issues.push("source.url: expected URL");
+    issues.push(`${path}.url: expected URL`);
   } else {
     try {
       const url = new URL(source.url);
 
       if (url.protocol !== "http:" && url.protocol !== "https:") {
-        issues.push("source.url: expected http or https URL");
+        issues.push(`${path}.url: expected http or https URL`);
       }
     } catch {
-      issues.push("source.url: expected URL");
+      issues.push(`${path}.url: expected URL`);
     }
   }
 
   if (source.publishedAt !== undefined && Number.isNaN(Date.parse(source.publishedAt))) {
-    issues.push("source.publishedAt: expected parseable date string");
+    issues.push(`${path}.publishedAt: expected parseable date string`);
   }
 
   return issues;

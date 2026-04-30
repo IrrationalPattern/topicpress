@@ -3,6 +3,7 @@ import type { CategoryConfig, LocaleCode, SiteConfig } from "@topicpress/config"
 export type AiProviderMode = "fixture" | "live";
 
 export interface ArticleSourceInput {
+  readonly sourceItemId: string;
   readonly sourceName: string;
   readonly title: string;
   readonly url: string;
@@ -14,12 +15,17 @@ export interface ArticleSourceInput {
 
 export interface ArticleGenerationInput {
   readonly locale: LocaleCode;
-  readonly source: ArticleSourceInput;
+  readonly storyClusterId: string;
+  readonly primarySourceItemId: string;
+  readonly sourceItemIds: readonly string[];
+  readonly sourceItems: readonly ArticleSourceInput[];
   readonly categoryHint?: string;
   readonly keywordHints: readonly string[];
 }
 
 export interface ArticleGenerationInputOptions {
+  readonly storyClusterId?: string;
+  readonly primarySourceItemId?: string;
   readonly locale?: LocaleCode;
   readonly categoryHint?: string;
   readonly keywordHints?: readonly string[];
@@ -54,22 +60,29 @@ export interface DraftCategory {
 }
 
 export interface DraftCitation {
+  readonly sourceItemId: string;
   readonly sourceName: string;
   readonly title: string;
   readonly url: string;
   readonly author?: string;
   readonly publishedAt?: string;
+  readonly isPrimarySource: boolean;
 }
 
 export interface DraftLineage {
   readonly kind: "source_item";
+  readonly sourceItemId: string;
+  readonly storyClusterId: string;
+  readonly generationRunId: string;
   readonly sourceName: string;
   readonly sourceUrl: string;
   readonly sourceTitle: string;
   readonly fetchedAt?: string;
+  readonly isPrimarySource: boolean;
 }
 
 export interface DraftGenerationMetadata {
+  readonly generationRunId: string;
   readonly provider: string;
   readonly mode: AiProviderMode;
   readonly locale: LocaleCode;

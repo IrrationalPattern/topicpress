@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+
 import { buildCanonicalTopic, clusterSourceItemsWithStore } from "../dist/clustering.js";
+import { buildClusterableSourceItemsQuery } from "../dist/clustering/drizzle-store.js";
 
 const now = new Date("2026-04-30T10:00:00.000Z");
 const fetchedAt = new Date("2026-04-30T09:00:00.000Z");
@@ -181,6 +185,25 @@ test("canonical topic heuristic ignores case and punctuation deterministically",
     ),
     "ukraine energy grid update",
   );
+});
+
+test("Drizzle clusterable source item query ignores inactive sources", async () => {
+  const client = postgres("postgres://postgres:postgres@127.0.0.1:5432/postgres", { max: 1 });
+
+  try {
+    const db = drizzle(client);
+    const query = buildClusterableSourceItemsQuery(db, 25).toSQL();
+    const sql = query.sql.replace(/\s+/g, " ");
+
+    assert.match(
+      sql,
+      /inner join "sources" on "source_items"\."source_id" = "sources"\."id"/,
+    );
+    assert.match(sql, /"sources"\."is_active" = \$\d+/);
+    assert.deepEqual(query.params.slice(0, 2), ["normalized", true]);
+  } finally {
+    await client.end();
+  }
 });
 
 function sourceItem(overrides = {}) {

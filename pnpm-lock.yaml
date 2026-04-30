@@ -66,6 +66,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@topicpress/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@topicpress/config':
         specifier: workspace:*
         version: link:../../packages/config

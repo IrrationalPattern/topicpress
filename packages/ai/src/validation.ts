@@ -1,6 +1,7 @@
 import { siteConfig as defaultSiteConfig, type SiteConfig } from "@topicpress/config";
 
 import type {
+  ArticleGenerationInput,
   ArticleDraft,
   DraftCategory,
   DraftCitation,
@@ -14,6 +15,7 @@ import { activeDraftCategories } from "./utils.js";
 export interface DraftValidationOptions {
   readonly siteConfig?: SiteConfig;
   readonly locale?: string;
+  readonly input?: ArticleGenerationInput;
 }
 
 export function parseArticleDraft(
@@ -43,9 +45,14 @@ export function parseArticleDraft(
   );
   const category = readCategory(draft.category, config, locale, issues);
   const slug = readSlug(draft, "slug", "draft.slug", issues);
-  const citations = readCitations(draft.citations, issues);
-  const lineage = readLineage(draft.lineage, issues);
   const generation = readGeneration(draft.generation, locale, issues);
+  const citations = readCitations(draft.citations, issues, options.input);
+  const lineage = readLineage(draft.lineage, issues, {
+    ...(generation?.generationRunId !== undefined
+      ? { generationRunId: generation.generationRunId }
+      : {}),
+    ...(options.input !== undefined ? { input: options.input } : {}),
+  });
 
   if (issues.length > 0) {
     return { ok: false, issues };
@@ -70,6 +77,7 @@ export function parseArticleDraft(
       citations,
       lineage,
       generation: generation ?? {
+        generationRunId: "unknown-generation-run",
         provider: "unknown",
         mode: "fixture",
         locale,
@@ -135,19 +143,29 @@ function readCategory(
   return { key, slug, label };
 }
 
-function readCitations(input: unknown, issues: string[]): readonly DraftCitation[] {
+function readCitations(
+  input: unknown,
+  issues: string[],
+  generationInput: ArticleGenerationInput | undefined,
+): readonly DraftCitation[] {
   if (!Array.isArray(input) || input.length === 0) {
     issues.push("draft.citations: expected non-empty array");
     return [];
   }
 
-  return input.flatMap((entry, index) => {
+  const citations = input.flatMap((entry, index) => {
     const citation = asRecord(entry, `draft.citations[${index}]`, issues);
 
     if (citation === undefined) {
       return [];
     }
 
+    const sourceItemId = readRequiredString(
+      citation,
+      "sourceItemId",
+      `draft.citations[${index}].sourceItemId`,
+      issues,
+    );
     const sourceName = readRequiredString(
       citation,
       "sourceName",
@@ -168,30 +186,55 @@ function readCitations(input: unknown, issues: string[]): readonly DraftCitation
       `draft.citations[${index}].publishedAt`,
       issues,
     );
+    const isPrimarySource = readRequiredBoolean(
+      citation,
+      "isPrimarySource",
+      `draft.citations[${index}].isPrimarySource`,
+      issues,
+    );
 
-    if (sourceName === undefined || title === undefined || url === undefined) {
+    if (
+      sourceItemId === undefined ||
+      sourceName === undefined ||
+      title === undefined ||
+      url === undefined ||
+      isPrimarySource === undefined
+    ) {
       return [];
     }
 
     return [
       {
+        sourceItemId,
         sourceName,
         title,
         url,
         ...(author !== undefined ? { author } : {}),
         ...(publishedAt !== undefined ? { publishedAt } : {}),
+        isPrimarySource,
       },
     ];
   });
+
+  validateSourceCoverage("draft.citations", citations, generationInput, issues);
+
+  return citations;
 }
 
-function readLineage(input: unknown, issues: string[]): readonly DraftLineage[] {
+function readLineage(
+  input: unknown,
+  issues: string[],
+  options: {
+    readonly generationRunId?: string;
+    readonly input?: ArticleGenerationInput;
+  },
+): readonly DraftLineage[] {
   if (!Array.isArray(input) || input.length === 0) {
     issues.push("draft.lineage: expected non-empty array");
     return [];
   }
 
-  return input.flatMap((entry, index) => {
+  const lineageEntries = input.flatMap((entry, index) => {
     const lineage = asRecord(entry, `draft.lineage[${index}]`, issues);
 
     if (lineage === undefined) {
@@ -202,6 +245,24 @@ function readLineage(input: unknown, issues: string[]): readonly DraftLineage[] 
       issues.push(`draft.lineage[${index}].kind: expected "source_item"`);
     }
 
+    const sourceItemId = readRequiredString(
+      lineage,
+      "sourceItemId",
+      `draft.lineage[${index}].sourceItemId`,
+      issues,
+    );
+    const storyClusterId = readRequiredString(
+      lineage,
+      "storyClusterId",
+      `draft.lineage[${index}].storyClusterId`,
+      issues,
+    );
+    const generationRunId = readRequiredString(
+      lineage,
+      "generationRunId",
+      `draft.lineage[${index}].generationRunId`,
+      issues,
+    );
     const sourceName = readRequiredString(
       lineage,
       "sourceName",
@@ -221,21 +282,53 @@ function readLineage(input: unknown, issues: string[]): readonly DraftLineage[] 
       `draft.lineage[${index}].fetchedAt`,
       issues,
     );
+    const isPrimarySource = readRequiredBoolean(
+      lineage,
+      "isPrimarySource",
+      `draft.lineage[${index}].isPrimarySource`,
+      issues,
+    );
 
-    if (sourceName === undefined || sourceUrl === undefined || sourceTitle === undefined) {
+    if (
+      options.generationRunId !== undefined &&
+      generationRunId !== undefined &&
+      generationRunId !== options.generationRunId
+    ) {
+      issues.push(
+        `draft.lineage[${index}].generationRunId: expected "${options.generationRunId}"`,
+      );
+    }
+
+    if (
+      sourceItemId === undefined ||
+      storyClusterId === undefined ||
+      generationRunId === undefined ||
+      sourceName === undefined ||
+      sourceUrl === undefined ||
+      sourceTitle === undefined ||
+      isPrimarySource === undefined
+    ) {
       return [];
     }
 
     return [
       {
         kind: "source_item" as const,
+        sourceItemId,
+        storyClusterId,
+        generationRunId,
         sourceName,
         sourceUrl,
         sourceTitle,
         ...(fetchedAt !== undefined ? { fetchedAt } : {}),
+        isPrimarySource,
       },
     ];
   });
+
+  validateLineageCoverage(lineageEntries, options.input, issues);
+
+  return lineageEntries;
 }
 
 function readGeneration(
@@ -249,6 +342,12 @@ function readGeneration(
     return undefined;
   }
 
+  const generationRunId = readRequiredString(
+    generation,
+    "generationRunId",
+    "draft.generation.generationRunId",
+    issues,
+  );
   const provider = readRequiredString(generation, "provider", "draft.generation.provider", issues);
   const mode = readMode(generation.mode, issues);
   const locale = readRequiredString(generation, "locale", "draft.generation.locale", issues);
@@ -281,6 +380,7 @@ function readGeneration(
   }
 
   if (
+    generationRunId === undefined ||
     provider === undefined ||
     mode === undefined ||
     locale === undefined ||
@@ -292,6 +392,7 @@ function readGeneration(
   }
 
   return {
+    generationRunId,
     provider,
     mode,
     locale,
@@ -314,6 +415,95 @@ function readMode(input: unknown, issues: string[]): "fixture" | "live" | undefi
   return input;
 }
 
+function validateSourceCoverage(
+  path: string,
+  entries: readonly DraftCitation[],
+  input: ArticleGenerationInput | undefined,
+  issues: string[],
+): void {
+  if (input === undefined) {
+    return;
+  }
+
+  const seenSourceItemIds = new Set<string>();
+
+  entries.forEach((entry, index) => {
+    seenSourceItemIds.add(entry.sourceItemId);
+    validateSourceReference(path, index, entry, input, issues);
+  });
+
+  input.sourceItemIds.forEach((sourceItemId) => {
+    if (!seenSourceItemIds.has(sourceItemId)) {
+      issues.push(`${path}: missing entry for source item id "${sourceItemId}"`);
+    }
+  });
+}
+
+function validateLineageCoverage(
+  entries: readonly DraftLineage[],
+  input: ArticleGenerationInput | undefined,
+  issues: string[],
+): void {
+  if (input === undefined) {
+    return;
+  }
+
+  const seenSourceItemIds = new Set<string>();
+
+  entries.forEach((entry, index) => {
+    seenSourceItemIds.add(entry.sourceItemId);
+    validateSourceReference("draft.lineage", index, entry, input, issues);
+
+    if (entry.storyClusterId !== input.storyClusterId) {
+      issues.push(`draft.lineage[${index}].storyClusterId: expected "${input.storyClusterId}"`);
+    }
+  });
+
+  input.sourceItemIds.forEach((sourceItemId) => {
+    if (!seenSourceItemIds.has(sourceItemId)) {
+      issues.push(`draft.lineage: missing entry for source item id "${sourceItemId}"`);
+    }
+  });
+}
+
+function validateSourceReference(
+  path: string,
+  index: number,
+  entry: DraftCitation | DraftLineage,
+  input: ArticleGenerationInput,
+  issues: string[],
+): void {
+  const source = input.sourceItems.find(
+    (sourceItem) => sourceItem.sourceItemId === entry.sourceItemId,
+  );
+
+  if (source === undefined) {
+    issues.push(`${path}[${index}].sourceItemId: unknown source item id "${entry.sourceItemId}"`);
+    return;
+  }
+
+  const expectedIsPrimary = entry.sourceItemId === input.primarySourceItemId;
+
+  if (entry.isPrimarySource !== expectedIsPrimary) {
+    issues.push(`${path}[${index}].isPrimarySource: expected ${String(expectedIsPrimary)}`);
+  }
+
+  const title = "sourceTitle" in entry ? entry.sourceTitle : entry.title;
+  const url = "sourceUrl" in entry ? entry.sourceUrl : entry.url;
+
+  if (entry.sourceName !== source.sourceName) {
+    issues.push(`${path}[${index}].sourceName: expected "${source.sourceName}"`);
+  }
+
+  if (title !== source.title) {
+    issues.push(`${path}[${index}].title: expected "${source.title}"`);
+  }
+
+  if (url !== source.url) {
+    issues.push(`${path}[${index}].url: expected "${source.url}"`);
+  }
+}
+
 function readRequiredString(
   input: Readonly<Record<string, unknown>>,
   key: string,
@@ -328,6 +518,22 @@ function readRequiredString(
   }
 
   return value.trim();
+}
+
+function readRequiredBoolean(
+  input: Readonly<Record<string, unknown>>,
+  key: string,
+  path: string,
+  issues: string[],
+): boolean | undefined {
+  const value = input[key];
+
+  if (typeof value !== "boolean") {
+    issues.push(`${path}: expected boolean`);
+    return undefined;
+  }
+
+  return value;
 }
 
 function readOptionalString(

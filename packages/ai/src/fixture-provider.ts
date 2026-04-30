@@ -41,15 +41,22 @@ export function generateFixtureDraft(
   options: GenerateFixtureDraftOptions = {},
 ): ArticleDraft {
   const category = selectFixtureCategory(input, siteConfig);
-  const title = makeDraftTitle(input.source.title);
+  const primarySource = getPrimarySourceItem(input);
+  const title = makeDraftTitle(primarySource.title);
   const subtitle = `A concise ${category.label.toLowerCase()} brief for ${siteConfig.identity.name}.`;
-  const excerptSource = input.source.excerpt ?? input.source.contentText ?? input.source.title;
+  const excerptSource = primarySource.excerpt ?? primarySource.contentText ?? primarySource.title;
   const excerpt = truncateSentence(excerptSource, 155);
   const body = buildFixtureBody(input, category);
   const keywords = selectKeywords(input, category);
   const slug = slugify(title);
   const inputHash = stableHash(input);
   const promptHash = options.promptHash ?? stableHash({ input, site: siteConfig.identity.slug });
+  const generationRunId = `fixture-run-${stableHash({
+    generatedAt: now.toISOString(),
+    inputHash,
+    promptHash,
+    provider: options.providerId ?? "fixture-draft-provider",
+  })}`;
 
   return {
     title,
@@ -61,27 +68,28 @@ export function generateFixtureDraft(
     metaDescription: truncateSentence(excerpt, 155),
     category,
     slug,
-    citations: [
-      {
-        sourceName: input.source.sourceName,
-        title: input.source.title,
-        url: input.source.url,
-        ...(input.source.author !== undefined ? { author: input.source.author } : {}),
-        ...(input.source.publishedAt !== undefined
-          ? { publishedAt: input.source.publishedAt }
-          : {}),
-      },
-    ],
-    lineage: [
-      {
+    citations: input.sourceItems.map((source) => ({
+      sourceItemId: source.sourceItemId,
+      sourceName: source.sourceName,
+      title: source.title,
+      url: source.url,
+      ...(source.author !== undefined ? { author: source.author } : {}),
+      ...(source.publishedAt !== undefined ? { publishedAt: source.publishedAt } : {}),
+      isPrimarySource: source.sourceItemId === input.primarySourceItemId,
+    })),
+    lineage: input.sourceItems.map((source) => ({
         kind: "source_item",
-        sourceName: input.source.sourceName,
-        sourceUrl: input.source.url,
-        sourceTitle: input.source.title,
-        fetchedAt: now.toISOString(),
-      },
-    ],
+      sourceItemId: source.sourceItemId,
+      storyClusterId: input.storyClusterId,
+      generationRunId,
+      sourceName: source.sourceName,
+      sourceUrl: source.url,
+      sourceTitle: source.title,
+      fetchedAt: now.toISOString(),
+      isPrimarySource: source.sourceItemId === input.primarySourceItemId,
+    })),
     generation: {
+      generationRunId,
       provider: options.providerId ?? "fixture-draft-provider",
       mode: "fixture",
       locale: input.locale,
@@ -109,9 +117,11 @@ function selectFixtureCategory(
 
   const categories = activeDraftCategories(siteConfig, input.locale);
   const haystack = [
-    input.source.title,
-    input.source.excerpt,
-    input.source.contentText,
+    ...input.sourceItems.flatMap((source) => [
+      source.title,
+      source.excerpt,
+      source.contentText,
+    ]),
     ...input.keywordHints,
   ]
     .filter((entry): entry is string => entry !== undefined)
@@ -154,17 +164,20 @@ function makeDraftTitle(sourceTitle: string): string {
 }
 
 function buildFixtureBody(input: ArticleGenerationInput, category: DraftCategory): string {
-  const sourceSummary = input.source.excerpt ?? input.source.contentText ?? input.source.title;
+  const primarySource = getPrimarySourceItem(input);
+  const sourceSummary = primarySource.excerpt ?? primarySource.contentText ?? primarySource.title;
   const sourceDate =
-    input.source.publishedAt !== undefined
-      ? ` The source item is dated ${new Date(input.source.publishedAt).toISOString()}.`
+    primarySource.publishedAt !== undefined
+      ? ` The primary source item is dated ${new Date(primarySource.publishedAt).toISOString()}.`
       : "";
+  const supportingSourceCount = Math.max(input.sourceItems.length - 1, 0);
 
   return [
-    `This draft summarises ${input.source.sourceName}'s report, "${input.source.title}".${sourceDate}`,
-    `The item is classified as ${category.label} because the source material and hints point to that taxonomy area.`,
+    `This draft summarises the primary source item from ${primarySource.sourceName}, "${primarySource.title}".${sourceDate}`,
+    `It belongs to story cluster ${input.storyClusterId} with ${supportingSourceCount} supporting source item(s).`,
+    `The cluster is classified as ${category.label} because the source material and hints point to that taxonomy area.`,
     `Key source detail: ${truncateSentence(sourceSummary, 260)}`,
-    "Editors should review the original source before publication and keep attribution attached.",
+    "Editors should review every original source before publication and keep attribution attached.",
   ].join("\n\n");
 }
 
@@ -175,7 +188,7 @@ function selectKeywords(
   const candidates = [
     category.label,
     ...input.keywordHints,
-    ...input.source.title.split(/\W+/).filter((word) => word.length > 4),
+    ...getPrimarySourceItem(input).title.split(/\W+/).filter((word) => word.length > 4),
   ];
   const seen = new Set<string>();
 
@@ -190,6 +203,18 @@ function selectKeywords(
       return true;
     })
     .slice(0, 8);
+}
+
+function getPrimarySourceItem(input: ArticleGenerationInput): ArticleGenerationInput["sourceItems"][number] {
+  return (
+    input.sourceItems.find((source) => source.sourceItemId === input.primarySourceItemId) ??
+    input.sourceItems[0] ?? {
+      sourceItemId: input.primarySourceItemId,
+      sourceName: "Unknown source",
+      title: "Generated draft",
+      url: "https://example.com/source",
+    }
+  );
 }
 
 function truncateSentence(input: string, maxLength: number): string {

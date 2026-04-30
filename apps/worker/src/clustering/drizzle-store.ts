@@ -1,6 +1,6 @@
 import { and, asc, eq, isNull } from "drizzle-orm";
 
-import { sourceItems, storyClusterItems, storyClusters } from "@topicpress/db";
+import { sourceItems, sources, storyClusterItems, storyClusters } from "@topicpress/db";
 
 import type { TopicpressDatabase } from "../database.js";
 import type {
@@ -45,6 +45,15 @@ async function listClusterableSourceItems(
   db: ClusteringExecutor,
   limit: number | undefined,
 ): Promise<readonly ClusterableSourceItem[]> {
+  const query = buildClusterableSourceItemsQuery(db, limit);
+
+  return query;
+}
+
+export function buildClusterableSourceItemsQuery(
+  db: ClusteringExecutor,
+  limit: number | undefined,
+) {
   const query = db
     .select({
       id: sourceItems.id,
@@ -55,8 +64,15 @@ async function listClusterableSourceItems(
       status: sourceItems.status,
     })
     .from(sourceItems)
+    .innerJoin(sources, eq(sourceItems.sourceId, sources.id))
     .leftJoin(storyClusterItems, eq(sourceItems.id, storyClusterItems.sourceItemId))
-    .where(and(eq(sourceItems.status, "normalized"), isNull(storyClusterItems.id)))
+    .where(
+      and(
+        eq(sourceItems.status, "normalized"),
+        eq(sources.isActive, true),
+        isNull(storyClusterItems.id),
+      ),
+    )
     .orderBy(asc(sourceItems.normalizedTitle), asc(sourceItems.publishedAt), asc(sourceItems.id));
 
   if (limit !== undefined) {
