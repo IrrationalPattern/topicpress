@@ -139,8 +139,8 @@ export class OpenAIDraftProvider implements DraftProvider {
         },
         body: JSON.stringify({
           model: this.model,
-          instructions: request.prompt.system,
-          input: request.prompt.user,
+          instructions: buildOpenAIInstructions(request.prompt.system),
+          input: buildOpenAIInput(request.prompt.user),
           store: false,
           metadata: {
             topicpress_provider: this.id,
@@ -270,7 +270,7 @@ function readArticleContent(input: unknown): OpenAIArticleContent {
   const rawSubtitle = record.subtitle;
   const subtitle = rawSubtitle === null ? null : readString(record, "subtitle");
   const excerpt = readString(record, "excerpt");
-  const body = readString(record, "body");
+  const body = sanitizeGeneratedArticleBody(readString(record, "body"));
   const metaTitle = readString(record, "metaTitle");
   const metaDescription = readString(record, "metaDescription");
   const categoryKey = readString(record, "categoryKey");
@@ -288,6 +288,49 @@ function readArticleContent(input: unknown): OpenAIArticleContent {
     categoryKey,
     slug,
   };
+}
+
+function buildOpenAIInstructions(baseInstructions: string): string {
+  return [
+    baseInstructions,
+    "Do not include internal identifiers, source item ids, story cluster ids, generation ids, raw URLs, or a source/lineage appendix inside article prose.",
+    "The article body must read as publishable editorial copy only. Attribution and lineage are handled by separate structured metadata.",
+  ].join("\n");
+}
+
+function buildOpenAIInput(baseInput: string): string {
+  return [
+    baseInput,
+    "",
+    "Article body constraints:",
+    "- Do not include headings such as Source, Sources, Source and lineage, Citations, Lineage, Metadata, or Internal notes.",
+    "- Do not include source item ids, story cluster ids, generation ids, raw URLs, or implementation/debug identifiers in title, excerpt, body, SEO fields, or keywords.",
+  ].join("\n");
+}
+
+function sanitizeGeneratedArticleBody(body: string): string {
+  const withoutInternalSection = body
+    .split(/\n(?=#{1,6}\s*(?:source(?:s)?|source and lineage|citations?|lineage|metadata|internal notes?)\b)/i)[0]
+    ?.trim() ?? "";
+  const sanitized = withoutInternalSection
+    .split(/\r?\n/)
+    .filter((line) => !containsInternalReference(line))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  if (sanitized.length === 0) {
+    throw new OpenAIDraftProviderError("OpenAI structured output body contained only internal metadata.");
+  }
+
+  return sanitized;
+}
+
+function containsInternalReference(value: string): boolean {
+  return (
+    /\b(?:story\s+cluster|source\s+item|generation\s+run)\s+id\b/i.test(value) ||
+    /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i.test(value)
+  );
 }
 
 function resolveCategory(

@@ -159,9 +159,9 @@ export function validateReadyEligibility(
 }
 
 export function buildArticleReview(data: ArticleReviewArticleData): ArticleReviewArticle {
+  const localizations = data.localizations.map(sanitizeLocalizationForReview);
   const primaryLocalization =
-    data.localizations.find((localization) => localization.locale === data.article.primaryLocale) ??
-    null;
+    localizations.find((localization) => localization.locale === data.article.primaryLocale) ?? null;
   const validation = validateArticleData(data, primaryLocalization);
 
   return {
@@ -179,10 +179,38 @@ export function buildArticleReview(data: ArticleReviewArticleData): ArticleRevie
     category: data.category,
     storyCluster: data.storyCluster,
     primaryLocalization,
-    localizations: data.localizations,
+    localizations,
     sources: data.sources,
     validation,
   };
+}
+
+function sanitizeLocalizationForReview(
+  localization: ArticleReviewArticle["localizations"][number],
+): ArticleReviewArticle["localizations"][number] {
+  return {
+    ...localization,
+    body: removeInternalBodySections(localization.body),
+  };
+}
+
+function removeInternalBodySections(body: string): string {
+  return (
+    body
+      .split(/\n(?=#{1,6}\s*(?:source(?:s)?|source and lineage|citations?|lineage|metadata|internal notes?)\b)/i)[0]
+      ?.split(/\r?\n/)
+      .filter((line) => !containsInternalReference(line))
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim() ?? body
+  );
+}
+
+function containsInternalReference(value: string): boolean {
+  return (
+    /\b(?:story\s+cluster|source\s+item|generation\s+run)\s+id\b/i.test(value) ||
+    /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i.test(value)
+  );
 }
 
 function validateArticleData(

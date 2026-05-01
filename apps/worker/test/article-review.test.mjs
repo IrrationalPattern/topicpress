@@ -56,6 +56,32 @@ test("sanitizes existing review notes and generation metadata on read", async ()
   assert.equal(JSON.stringify(loaded.article.generationMetadata).includes("sk-secret"), false);
 });
 
+test("removes internal source lineage sections from review body display", async () => {
+  const store = createMemoryArticleReviewStore({
+    localizations: [
+      localization({
+        body: [
+          "A complete article body for review-gated publishing validation.",
+          "",
+          "## Source and lineage",
+          "- Primary source: Source story. Source item id: source-item-1.",
+          "- Story cluster id: cluster-1",
+        ].join("\n"),
+      }),
+    ],
+  });
+
+  const loaded = await loadArticleReviewWithStore(store, "article-1");
+
+  assert.equal(loaded.ok, true);
+  assert.equal(
+    loaded.article.primaryLocalization.body,
+    "A complete article body for review-gated publishing validation.",
+  );
+  assert.equal(loaded.article.primaryLocalization.body.includes("Story cluster id"), false);
+  assert.equal(loaded.article.primaryLocalization.body.includes("Source item id"), false);
+});
+
 test("moves a complete review article to ready without changing notes when none are supplied", async () => {
   const store = createMemoryArticleReviewStore();
 

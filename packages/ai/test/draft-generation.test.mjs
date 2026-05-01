@@ -311,7 +311,13 @@ test("OpenAI provider maps structured response content into review draft metadat
             title: "Live model release draft",
             subtitle: null,
             excerpt: "OpenAI announced a model update for developers.",
-            body: "OpenAI announced a model update for developers based only on the supplied source.",
+            body: [
+              "OpenAI announced a model update for developers based only on the supplied source.",
+              "",
+              "## Source and lineage",
+              "- Source item id: source-item-openai-release",
+              "- Story cluster id: story-cluster-model-release",
+            ].join("\n"),
             keywords: ["openai", "model release"],
             metaTitle: "Live model release draft | AI Landscape Brief",
             metaDescription: "OpenAI announced a model update for developers.",
@@ -333,6 +339,9 @@ test("OpenAI provider maps structured response content into review draft metadat
   assert.equal(draft.generation.manualReviewRequired, true);
   assert.equal(draft.generation.status, "review");
   assert.equal(draft.category.key, "model_releases");
+  assert.equal(draft.body.includes("Story cluster id"), false);
+  assert.equal(draft.body.includes("Source item id"), false);
+  assert.equal(draft.body.includes("## Source and lineage"), false);
   assert.equal(draft.citations[0].sourceItemId, source.sourceItemId);
   assert.equal(draft.lineage[0].generationRunId, draft.generation.generationRunId);
 });
