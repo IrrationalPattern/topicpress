@@ -5,7 +5,7 @@ export default function ArticleReviewNotFound() {
     <main className="workspace-shell">
       <div className="state-box">
         <h1 className="panel-title">Article review not found</h1>
-        <p className="muted">The requested draft was not returned by the BE-401 review boundary.</p>
+        <p className="muted">The requested draft is not available for review.</p>
         <Link className="button-link" href="/internal/editorial/review">
           Back to review list
         </Link>

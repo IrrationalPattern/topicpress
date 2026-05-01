@@ -73,6 +73,34 @@ test("records validation failure visibility for malformed provider output", asyn
   assert.equal(stores.articles.length, 0);
 });
 
+test("live provider env selection fails closed without OpenAI credentials", async () => {
+  const stores = createMemoryStores();
+  const previousProvider = process.env.TOPICPRESS_AI_PROVIDER;
+  const previousLiveEnabled = process.env.TOPICPRESS_AI_LIVE_ENABLED;
+  const previousApiKey = process.env.OPENAI_API_KEY;
+
+  try {
+    process.env.TOPICPRESS_AI_PROVIDER = "live";
+    process.env.TOPICPRESS_AI_LIVE_ENABLED = "true";
+    delete process.env.OPENAI_API_KEY;
+
+    const result = await runClusterGenerationWithStores(stores, { now });
+    const clusterRun = stores.pipelineRuns.find((run) => run.storyClusterId === "cluster-1");
+
+    assert.equal(result.ok, false);
+    assert.equal(result.summary.outcome, "failed");
+    assert.equal(result.summary.failures[0].errorClass, "provider_failed");
+    assert.match(result.summary.failures[0].errorMessage, /OPENAI_API_KEY/);
+    assert.equal(clusterRun.status, "failed");
+    assert.equal(clusterRun.payload.errorClass, "provider_failed");
+    assert.equal(stores.articles.length, 0);
+  } finally {
+    restoreEnv("TOPICPRESS_AI_PROVIDER", previousProvider);
+    restoreEnv("TOPICPRESS_AI_LIVE_ENABLED", previousLiveEnabled);
+    restoreEnv("OPENAI_API_KEY", previousApiKey);
+  }
+});
+
 test("partial generation failure does not block unrelated eligible clusters", async () => {
   const stores = createMemoryStores({
     clusters: [cluster(), cluster({ id: "cluster-2", canonicalTopic: "second model release" })],
@@ -324,4 +352,13 @@ function article(overrides = {}) {
     updatedAt: now,
     ...overrides,
   };
+}
+
+function restoreEnv(key, value) {
+  if (value === undefined) {
+    delete process.env[key];
+    return;
+  }
+
+  process.env[key] = value;
 }

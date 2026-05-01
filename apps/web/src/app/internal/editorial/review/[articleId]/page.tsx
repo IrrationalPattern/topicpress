@@ -150,7 +150,7 @@ function ArticleReviewDetail({ article }: { article: ArticleReviewArticle }) {
 
           <Panel title="Validation state">
             {article.validation.ok ? (
-              <p className="muted">BE-401 validation reports this review draft is eligible for ready status.</p>
+              <p className="muted">This review draft is eligible for ready status.</p>
             ) : (
               <ul>
                 {article.validation.issues.map((issue) => (

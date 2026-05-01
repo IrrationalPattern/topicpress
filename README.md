@@ -256,3 +256,44 @@ pnpm db:check
 ```
 
 `pnpm db:diff:local` remains advisory because of the known Windows shadow database issue. Root `pnpm build` has a known web build hang risk in this workspace; prefer focused web typecheck/lint and worker tests for M4 unless specifically investigating build behavior.
+
+## M4 Optional Live OpenAI Draft Generation
+
+Fixture-backed generation remains the default and does not require OpenAI credentials:
+
+```powershell
+pnpm --filter @topicpress/worker cluster:generate -- --json --limit 5
+```
+
+Live OpenAI draft generation is opt-in, local/operator controlled, and review-draft-only. Use a service-account API key stored in an ignored local env file or process environment; never commit real keys or record them in Obsidian notes, screenshots, logs, or QA evidence.
+
+Placeholder-only configuration:
+
+```dotenv
+TOPICPRESS_AI_PROVIDER=live
+TOPICPRESS_AI_LIVE_ENABLED=true
+TOPICPRESS_OPENAI_MODEL=gpt-5.5
+TOPICPRESS_OPENAI_TIMEOUT_MS=60000
+OPENAI_API_KEY=<local-openai-service-account-api-key>
+```
+
+Small live verification path after the normal local database prep:
+
+```powershell
+pnpm supabase:start
+pnpm db:reset
+pnpm db:migrate
+pnpm db:check
+pnpm seed:sync
+pnpm ingest --force --json
+pnpm --filter @topicpress/worker cluster:generate -- --json --limit 1
+```
+
+Expected live outcome:
+
+- `cluster:generate` creates or reuses review drafts only; generated output does not move articles to `ready` or `published`.
+- Missing `OPENAI_API_KEY`, disabled `TOPICPRESS_AI_LIVE_ENABLED`, malformed model output, refusals, timeouts, rate limits, and API errors fail closed with sanitized operator-visible errors.
+- `articles.generation_metadata` and `pipeline_runs.payload` may include non-secret values such as provider, mode, model, generation run id, hashes, status, and outcome. They must not include API keys, authorization headers, raw env dumps, account identifiers, or request secrets.
+- Publishing still requires the existing manual review path: `review -> ready -> published`.
+
+Official OpenAI docs consulted for this implementation: Responses API, Structured Outputs, and the latest model guide. The current default model is `gpt-5.5`, overrideable through `TOPICPRESS_OPENAI_MODEL`.

@@ -1,9 +1,9 @@
 import { siteConfig as defaultSiteConfig } from "@topicpress/config";
 import {
   buildArticleGenerationInput,
+  createDraftProvider,
   DraftValidationError,
   DraftValidationInputError,
-  FixtureDraftProvider,
   generateArticleDraft,
   type ArticleGenerationInput,
   type ArticleSourceInput,
@@ -200,7 +200,7 @@ async function attemptClusterGeneration(
     const draft = await generateArticleDraft(generationInput, {
       siteConfig: options.siteConfig ?? defaultSiteConfig,
       now,
-      provider: options.provider ?? new FixtureDraftProvider(),
+      provider: options.provider ?? createDraftProvider(),
     });
     const draftResult = await createDraftArticleForClusterWithStore(
       stores.draftCreationStore,
@@ -256,6 +256,7 @@ async function attemptClusterGeneration(
           locale: draft.generation.locale,
           promptHash: draft.generation.promptHash,
           inputHash: draft.generation.inputHash,
+          ...(draft.generation.model !== undefined ? { model: draft.generation.model } : {}),
           ...(draft.generation.fixtureKey !== undefined
             ? { fixtureKey: draft.generation.fixtureKey }
             : {}),

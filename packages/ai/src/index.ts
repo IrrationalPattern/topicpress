@@ -8,6 +8,11 @@ export {
   generateFixtureDraft,
 } from "./fixture-provider.js";
 export {
+  defaultOpenAiDraftModel,
+  OpenAIDraftProvider,
+  OpenAIDraftProviderError,
+} from "./openai-provider.js";
+export {
   buildDraftPrompt,
 } from "./prompt.js";
 export {
@@ -47,6 +52,9 @@ export type {
   GenerateArticleDraftOptions,
   ValidationResult,
 } from "./types.js";
+export type {
+  OpenAIDraftProviderOptions,
+} from "./openai-provider.js";
 export {
   AiProviderConfigurationError,
   DraftValidationError,

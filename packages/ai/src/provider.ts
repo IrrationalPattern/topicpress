@@ -1,6 +1,7 @@
 import { siteConfig as defaultSiteConfig } from "@topicpress/config";
 
 import { FixtureDraftProvider } from "./fixture-provider.js";
+import { OpenAIDraftProvider, type OpenAIDraftProviderOptions } from "./openai-provider.js";
 import { buildDraftPrompt } from "./prompt.js";
 import type {
   AiProviderMode,
@@ -15,6 +16,10 @@ import { validateArticleDraft } from "./validation.js";
 export interface AiProviderEnv {
   readonly TOPICPRESS_AI_PROVIDER?: string;
   readonly TOPICPRESS_AI_LIVE_ENABLED?: string;
+  readonly OPENAI_API_KEY?: string;
+  readonly TOPICPRESS_OPENAI_MODEL?: string;
+  readonly TOPICPRESS_OPENAI_BASE_URL?: string;
+  readonly TOPICPRESS_OPENAI_TIMEOUT_MS?: string;
 }
 
 export interface CreateDraftProviderOptions {
@@ -36,9 +41,7 @@ export function createDraftProvider(options: CreateDraftProviderOptions = {}): D
     }
 
     if (options.liveProvider === undefined) {
-      throw new AiProviderConfigurationError(
-        "Live AI provider requested but no liveProvider adapter was supplied",
-      );
+      return createOpenAIDraftProvider(env);
     }
 
     return options.liveProvider;
@@ -88,5 +91,46 @@ function readProcessEnv(): AiProviderEnv {
     env.TOPICPRESS_AI_LIVE_ENABLED = process.env.TOPICPRESS_AI_LIVE_ENABLED;
   }
 
+  if (process.env.OPENAI_API_KEY !== undefined) {
+    env.OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  }
+
+  if (process.env.TOPICPRESS_OPENAI_MODEL !== undefined) {
+    env.TOPICPRESS_OPENAI_MODEL = process.env.TOPICPRESS_OPENAI_MODEL;
+  }
+
+  if (process.env.TOPICPRESS_OPENAI_BASE_URL !== undefined) {
+    env.TOPICPRESS_OPENAI_BASE_URL = process.env.TOPICPRESS_OPENAI_BASE_URL;
+  }
+
+  if (process.env.TOPICPRESS_OPENAI_TIMEOUT_MS !== undefined) {
+    env.TOPICPRESS_OPENAI_TIMEOUT_MS = process.env.TOPICPRESS_OPENAI_TIMEOUT_MS;
+  }
+
   return env;
+}
+
+function createOpenAIDraftProvider(env: AiProviderEnv): OpenAIDraftProvider {
+  const options: OpenAIDraftProviderOptions = {
+    apiKey: env.OPENAI_API_KEY ?? "",
+    ...(env.TOPICPRESS_OPENAI_MODEL !== undefined ? { model: env.TOPICPRESS_OPENAI_MODEL } : {}),
+    ...(env.TOPICPRESS_OPENAI_BASE_URL !== undefined
+      ? { baseUrl: env.TOPICPRESS_OPENAI_BASE_URL }
+      : {}),
+    ...(env.TOPICPRESS_OPENAI_TIMEOUT_MS !== undefined
+      ? { timeoutMs: parseTimeoutMs(env.TOPICPRESS_OPENAI_TIMEOUT_MS) }
+      : {}),
+  };
+
+  return new OpenAIDraftProvider(options);
+}
+
+function parseTimeoutMs(value: string): number {
+  const timeoutMs = Number(value);
+
+  if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) {
+    throw new AiProviderConfigurationError("TOPICPRESS_OPENAI_TIMEOUT_MS must be a positive integer.");
+  }
+
+  return timeoutMs;
 }

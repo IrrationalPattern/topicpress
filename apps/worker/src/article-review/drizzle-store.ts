@@ -14,7 +14,6 @@ import {
 import type { TopicpressDatabase } from "../database.js";
 import type {
   ArticleReviewArticleData,
-  ArticleReviewArticleRow,
   ArticleReviewExecutor,
   ArticleReviewSourceLineage,
   ArticleReviewStore,

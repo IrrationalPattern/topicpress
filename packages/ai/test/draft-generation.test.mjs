@@ -8,6 +8,8 @@ import {
   createDraftProvider,
   DraftValidationError,
   generateArticleDraft,
+  OpenAIDraftProvider,
+  OpenAIDraftProviderError,
   parseArticleDraft,
   validateArticleDraft,
 } from "../dist/index.js";
@@ -200,6 +202,16 @@ test("live providers are optional and must be explicitly env-gated", async () =>
     () => createDraftProvider({ env: { TOPICPRESS_AI_PROVIDER: "live" } }),
     AiProviderConfigurationError,
   );
+  assert.throws(
+    () =>
+      createDraftProvider({
+        env: {
+          TOPICPRESS_AI_PROVIDER: "live",
+          TOPICPRESS_AI_LIVE_ENABLED: "true",
+        },
+      }),
+    /OPENAI_API_KEY/,
+  );
 
   const liveProvider = {
     id: "test-live-provider",
@@ -270,4 +282,82 @@ test("live providers are optional and must be explicitly env-gated", async () =>
 
   assert.equal(draft.generation.mode, "live");
   assert.equal(draft.generation.model, "test-model");
+});
+
+test("OpenAI provider maps structured response content into review draft metadata", async () => {
+  const input = buildArticleGenerationInput(source, {
+    ...clusterOptions,
+    categoryHint: "model_releases",
+  });
+  let called = false;
+  const provider = new OpenAIDraftProvider({
+    apiKey: "test-openai-api-key",
+    model: "gpt-5.5",
+    fetch: async (url, init) => {
+      called = true;
+      assert.equal(url, "https://api.openai.com/v1/responses");
+      assert.equal(init.headers.authorization, "Bearer test-openai-api-key");
+
+      const requestBody = JSON.parse(init.body);
+      assert.equal(requestBody.model, "gpt-5.5");
+      assert.equal(requestBody.store, false);
+      assert.equal(requestBody.text.format.type, "json_schema");
+      assert.equal(requestBody.text.format.schema.properties.categoryKey.enum.includes("model_releases"), true);
+
+      return new Response(
+        JSON.stringify({
+          id: "resp_live_test",
+          output_text: JSON.stringify({
+            title: "Live model release draft",
+            subtitle: null,
+            excerpt: "OpenAI announced a model update for developers.",
+            body: "OpenAI announced a model update for developers based only on the supplied source.",
+            keywords: ["openai", "model release"],
+            metaTitle: "Live model release draft | AI Landscape Brief",
+            metaDescription: "OpenAI announced a model update for developers.",
+            categoryKey: "model_releases",
+            slug: "live-model-release-draft",
+          }),
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    },
+  });
+
+  const draft = await generateArticleDraft(input, { provider, now });
+
+  assert.equal(called, true);
+  assert.equal(draft.generation.provider, "openai-responses");
+  assert.equal(draft.generation.mode, "live");
+  assert.equal(draft.generation.model, "gpt-5.5");
+  assert.equal(draft.generation.manualReviewRequired, true);
+  assert.equal(draft.generation.status, "review");
+  assert.equal(draft.category.key, "model_releases");
+  assert.equal(draft.citations[0].sourceItemId, source.sourceItemId);
+  assert.equal(draft.lineage[0].generationRunId, draft.generation.generationRunId);
+});
+
+test("OpenAI provider reports refusals without returning partial drafts", async () => {
+  const input = buildArticleGenerationInput(source, clusterOptions);
+  const provider = new OpenAIDraftProvider({
+    apiKey: "test-openai-api-key",
+    fetch: async () =>
+      new Response(
+        JSON.stringify({
+          id: "resp_refusal_test",
+          output: [
+            {
+              type: "message",
+              content: [{ type: "refusal", refusal: "Cannot comply." }],
+            },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+  });
+
+  await assert.rejects(
+    () => generateArticleDraft(input, { provider, now }),
+    OpenAIDraftProviderError,
+  );
 });

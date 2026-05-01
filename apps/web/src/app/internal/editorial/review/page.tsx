@@ -29,7 +29,9 @@ export default async function EditorialReviewPage() {
             <h2 className="panel-title" id="review-list-title">
               Reviewable articles
             </h2>
-            <p className="row-meta">{articles.length} loaded from the BE-401 review boundary</p>
+            <p className="row-meta">
+              {articles.length} reviewable article{articles.length === 1 ? "" : "s"} loaded
+            </p>
           </div>
         </div>
 
@@ -89,8 +91,8 @@ function EmptyReviewState() {
     <div className="state-box">
       <h2 className="panel-title">No reviewable drafts</h2>
       <p className="muted">
-        No draft, review, or ready articles were returned. Run the M3 generation path or check the
-        local database connection if drafts were expected.
+        No draft, review, or ready articles were returned. Generate draft articles or check the local
+        database connection if drafts were expected.
       </p>
     </div>
   );

@@ -60,7 +60,7 @@ export function ReviewActionsPanel({ articleId, status }: ReviewActionsPanelProp
         helpText={
           status === "published"
             ? "Re-running publish returns the backend idempotency result."
-            : "Publishes a ready article through the BE-402 pipeline."
+            : "Publishes a ready article through the publishing workflow."
         }
         intent="publish"
         label={status === "published" ? "Check published" : "Publish"}
