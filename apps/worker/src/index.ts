@@ -4,6 +4,8 @@ export * from "./feed-ingestion.js";
 export * from "./feed-types.js";
 export * from "./clustering.js";
 export * from "./draft-creation.js";
+export * from "./article-review.js";
+export * from "./article-publishing.js";
 export * from "./cluster-generation-run.js";
 export * from "./ingestion-run.js";
 export * from "./ingestion-policy.js";

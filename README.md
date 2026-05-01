@@ -186,3 +186,73 @@ pnpm test
 Root `pnpm build` currently has a known unrelated web build hang in this Windows workspace. Prefer focused worker/AI builds for M2/M3 verification unless the change touches `apps/web` or shared build behavior.
 
 If Docker is not running, default Supabase ports are unavailable, or local package installation is blocked, record the exact blocker instead of substituting remote credentials.
+
+## M4 Local Review-Gated Publishing Verification
+
+M4 keeps publishing local/internal and manually gated. Generated drafts must move through human review before publication; direct `draft` or `review` publication must remain blocked. Do not put API keys, generated Supabase credentials, database passwords, production URLs, reviewer credentials, or private source credentials in repo files, UI notes, CLI output, or vault notes.
+
+Prepare a local dataset from the verified M3 path:
+
+```powershell
+pnpm supabase:start
+pnpm db:reset
+pnpm db:migrate
+pnpm db:check
+pnpm seed:sync
+pnpm ingest --force --json
+pnpm --filter @topicpress/worker cluster:generate -- --json --limit 5
+```
+
+Run the internal editorial UI:
+
+```powershell
+pnpm --filter @topicpress/web dev
+```
+
+Open `http://localhost:3000/internal/editorial/review`. The list shows reviewable `draft`, `review`, and `ready` articles. Open an article detail page to inspect title, body, category, slug, primary locale, SEO fields, source lineage, generation metadata, review notes, and BE-401 validation state.
+
+Use the article detail actions for the UI workflow:
+
+- `Move to review` sends a `draft` article to `review`.
+- `Approve ready` sends a valid `review` article to `ready` through BE-401 validation.
+- `Mark failed` requires a non-empty reason and records sanitized review notes through BE-401.
+- `Publish` publishes only valid `ready` content through BE-402 and returns pipeline run feedback.
+- `Hold` is a no-op and does not submit a backend transition.
+
+Use the worker CLI when QA needs a backend-only publish path:
+
+```powershell
+pnpm --filter @topicpress/worker article:publish -- --article-id <article-id> --json
+```
+
+Expected positive check:
+
+- A valid `review` article can move to `ready`.
+- A valid `ready` article can publish.
+- Successful publication sets `articles.status = 'published'` and `articles.published_at`.
+- The publish attempt creates one `pipeline_runs` row with `run_type = 'publish'`, final status, article id, and a sanitized payload.
+
+Expected negative checks:
+
+- `draft` and `review` articles cannot publish directly through the UI or CLI.
+- Missing category, slug, primary localization, title/body/excerpt, SEO metadata, generation metadata, source lineage, or primary source lineage blocks ready/publish transitions.
+- Invalid transitions and validation failures must not partially mutate article status or `published_at`.
+- Re-running publish for an already published article is idempotent and preserves the original `published_at`.
+
+Useful local SQL inspection through the project Supabase CLI:
+
+```powershell
+.\node_modules\.bin\supabase.CMD db query "select id, status, published_at, review_notes from public.articles order by updated_at desc limit 10;"
+.\node_modules\.bin\supabase.CMD db query "select id, run_type, status, article_id, error_message, payload from public.pipeline_runs where run_type = 'publish' order by created_at desc limit 10;"
+```
+
+Focused M4 checks:
+
+```powershell
+pnpm --filter @topicpress/worker test
+pnpm --filter @topicpress/web typecheck
+pnpm --filter @topicpress/web lint
+pnpm db:check
+```
+
+`pnpm db:diff:local` remains advisory because of the known Windows shadow database issue. Root `pnpm build` has a known web build hang risk in this workspace; prefer focused web typecheck/lint and worker tests for M4 unless specifically investigating build behavior.

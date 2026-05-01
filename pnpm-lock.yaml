@@ -47,9 +47,21 @@ importers:
 
   apps/web:
     dependencies:
+      '@topicpress/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@topicpress/worker':
+        specifier: workspace:*
+        version: link:../worker
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(postgres@3.4.9)
       next:
         specifier: ^15.3.1
         version: 15.5.15(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      postgres:
+        specifier: ^3.4.7
+        version: 3.4.9
       react:
         specifier: ^19.1.0
         version: 19.2.5
