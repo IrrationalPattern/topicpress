@@ -6,6 +6,7 @@ export * from "./clustering.js";
 export * from "./draft-creation.js";
 export * from "./article-review.js";
 export * from "./article-publishing.js";
+export * from "./public-homepage.js";
 export * from "./cluster-generation-run.js";
 export * from "./ingestion-run.js";
 export * from "./ingestion-policy.js";
