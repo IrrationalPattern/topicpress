@@ -9,7 +9,7 @@ import { WorkspaceShell } from "@/components/app/workspace-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-import { getArticleReview, type ArticleReviewArticle } from "../../../../../lib/article-review";
+import { getArticleReview, type ArticleReviewArticle } from "@/lib/article-review";
 import { ReviewActionsPanel } from "./review-actions-panel";
 
 export const dynamic = "force-dynamic";

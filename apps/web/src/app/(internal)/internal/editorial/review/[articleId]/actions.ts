@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import {
   publishEditorialArticle,
   transitionEditorialArticleReviewStatus,
-} from "../../../../../lib/article-review";
+} from "@/lib/article-review";
 import type {
   ReviewActionFeedback,
   ReviewActionIntent,

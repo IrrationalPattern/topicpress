@@ -21,9 +21,7 @@ export function getDefaultLocalePath(config: SiteConfig = siteConfig): string {
 export function getSupportedLocaleRouteParams(
   config: SiteConfig = siteConfig,
 ): { locale: string }[] {
-  return config.locales.supportedLocales.map((locale) => ({
-    locale: getLocalePathSegment(locale, config),
-  }));
+  return config.locales.supportedLocales.map((locale) => ({ locale }));
 }
 
 export function resolveLocaleFromPathSegment(

@@ -1,0 +1,13 @@
+{
+  "PublicHomePage": {
+    "shell": {
+      "footerLocale": "Current edition",
+      "home": "Home",
+      "localeSwitcher": "Language",
+      "primaryNav": "Primary",
+      "skipContent": "Skip to content"
+    },
+    "routeScaffoldTitle": "Public homepage route scaffold",
+    "routeScaffoldBody": "FE-505 will compose published article data and final homepage sections here."
+  }
+}

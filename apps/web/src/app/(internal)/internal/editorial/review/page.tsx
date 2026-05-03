@@ -5,7 +5,7 @@ import { Panel } from "@/components/app/panel";
 import { WorkspaceHeader } from "@/components/app/workspace-header";
 import { WorkspaceShell } from "@/components/app/workspace-shell";
 
-import { getReviewableArticles, type ArticleReviewArticle } from "../../../../lib/article-review";
+import { getReviewableArticles, type ArticleReviewArticle } from "@/lib/article-review";
 
 export const metadata = {
   title: "Editorial review | Topicpress",
