@@ -7,7 +7,24 @@
       "primaryNav": "Primary",
       "skipContent": "Skip to content"
     },
-    "routeScaffoldTitle": "Public homepage route scaffold",
-    "routeScaffoldBody": "FE-505 will compose published article data and final homepage sections here."
+    "hero": {
+      "kicker": "AI briefing",
+      "publishedCount": "{count, plural, =0 {No published articles yet} one {# published article} other {# published articles}}"
+    },
+    "articles": {
+      "ariaLabel": "Published homepage articles",
+      "heading": "Latest briefings",
+      "categoryLabel": "Category",
+      "dateLabel": "Published",
+      "slugLabel": "Slug",
+      "emptyStateTitle": "No published articles yet",
+      "emptyStateDescription": "Reviewed articles will appear here after they are approved for publication."
+    },
+    "states": {
+      "loadingLabel": "Loading public homepage",
+      "errorTitle": "Public homepage could not load",
+      "errorBody": "Published articles are temporarily unavailable. Try again after the data connection is restored.",
+      "retry": "Try again"
+    }
   }
 }

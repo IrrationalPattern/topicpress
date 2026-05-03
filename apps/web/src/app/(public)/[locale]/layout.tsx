@@ -1,16 +1,10 @@
-import { siteConfig } from "@topicpress/config";
-import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
-import { setRequestLocale } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 
-import {
-  getLanguageAlternates,
-  resolveAppLocale,
-  routing,
-  type AppLocale,
-} from "@/i18n/routing";
+import { PublicShell } from "@/components/public/public-shell";
+import { resolveAppLocale, routing, type AppLocale } from "@/i18n/routing";
 import { siteThemeStyle } from "@/lib/site-theme";
 
 import "../../globals.css";
@@ -24,29 +18,6 @@ export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
-export async function generateMetadata({
-  params,
-}: Pick<PublicLocaleLayoutProps, "params">): Promise<Metadata> {
-  const locale = resolveLocale((await params).locale);
-
-  if (locale === null) {
-    return {};
-  }
-
-  return {
-    title: {
-      default: siteConfig.identity.name,
-      template: `%s | ${siteConfig.identity.name}`,
-    },
-    description:
-      siteConfig.seo.descriptions[locale] ??
-      siteConfig.seo.descriptions[siteConfig.locales.defaultLocale],
-    alternates: {
-      languages: getLanguageAlternates(),
-    },
-  };
-}
-
 export default async function PublicLocaleLayout({ children, params }: PublicLocaleLayoutProps) {
   const locale = resolveLocale((await params).locale);
 
@@ -55,11 +26,23 @@ export default async function PublicLocaleLayout({ children, params }: PublicLoc
   }
 
   setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "PublicHomePage" });
 
   return (
     <html lang={locale} className="font-sans" style={siteThemeStyle}>
       <body>
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider>
+          <PublicShell
+            currentLocale={locale}
+            footerLocaleLabel={t("shell.footerLocale")}
+            homeLabel={t("shell.home")}
+            localeSwitcherLabel={t("shell.localeSwitcher")}
+            primaryNavLabel={t("shell.primaryNav")}
+            skipContentLabel={t("shell.skipContent")}
+          >
+            {children}
+          </PublicShell>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
