@@ -8,7 +8,7 @@
     "build": "next build",
     "lint": "eslint \"src/**/*.{ts,tsx}\" next.config.ts",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"No tests configured for @topicpress/web yet.\""
+    "test": "node --experimental-strip-types test/locale-routing.test.ts"
   },
   "dependencies": {
     "@topicpress/config": "workspace:*",
