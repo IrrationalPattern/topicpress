@@ -1,17 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { ReactNode } from "react";
+
+import { ArticleStatusBadge, ValidationBadge } from "@/components/app/article-badges";
+import { Field, MissingValue } from "@/components/app/field";
+import { Panel } from "@/components/app/panel";
+import { WorkspaceHeader } from "@/components/app/workspace-header";
+import { WorkspaceShell } from "@/components/app/workspace-shell";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 import { getArticleReview, type ArticleReviewArticle } from "../../../../../lib/article-review";
 import { ReviewActionsPanel } from "./review-actions-panel";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ articleId: string }>;
-}) {
+export async function generateMetadata({ params }: { params: Promise<{ articleId: string }> }) {
   const { articleId } = await params;
 
   return {
@@ -42,71 +45,84 @@ function ArticleReviewDetail({ article }: { article: ArticleReviewArticle }) {
   const localization = article.primaryLocalization;
 
   return (
-    <main className="workspace-shell">
-      <header className="workspace-header">
-        <div>
-          <p className="workspace-kicker">Internal editorial</p>
-          <h1 className="workspace-title">{localization?.title ?? "Untitled generated draft"}</h1>
-          <p className="workspace-subtitle">
-            Generated draft inspection with review-gated publishing actions through the worker
-            service boundary.
-          </p>
-        </div>
-        <Link className="button-link" href="/internal/editorial/review">
-          Back to review list
-        </Link>
-      </header>
+    <WorkspaceShell>
+      <WorkspaceHeader
+        action={
+          <Button asChild variant="outline">
+            <Link href="/internal/editorial/review">Back to review list</Link>
+          </Button>
+        }
+        kicker="Internal editorial"
+        subtitle="Generated draft inspection with review-gated publishing actions through the worker service boundary."
+        title={localization?.title ?? "Untitled generated draft"}
+      />
 
-      <div className="detail-grid">
-        <div className="stack">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
+        <div className="flex flex-col gap-4">
           <Panel title="Article content">
-            <div className="field-grid">
-              <Field label="Title" value={localization?.title} />
-              <Field label="Subtitle" value={localization?.subtitle} />
+            <div className="grid gap-3 md:grid-cols-2">
+              <Field label="Title" value={<MissingValue value={localization?.title} />} />
+              <Field label="Subtitle" value={<MissingValue value={localization?.subtitle} />} />
             </div>
-            <Field label="Excerpt" value={localization?.excerpt} />
-            <div className="field">
-              <p className="field-label">Body</p>
-              <p className="article-body">{localization?.body ?? "Not provided"}</p>
-            </div>
+            <Field label="Excerpt" value={<MissingValue value={localization?.excerpt} />} />
+            <Field
+              label="Body"
+              value={<p className="whitespace-pre-wrap">{localization?.body ?? "Not provided"}</p>}
+            />
           </Panel>
 
           <Panel title="SEO fields">
-            <div className="field-grid">
-              <Field label="Meta title" value={localization?.metaTitle} />
-              <Field label="Meta description" value={localization?.metaDescription} />
+            <div className="grid gap-3 md:grid-cols-2">
+              <Field label="Meta title" value={<MissingValue value={localization?.metaTitle} />} />
+              <Field
+                label="Meta description"
+                value={<MissingValue value={localization?.metaDescription} />}
+              />
               <Field label="Keywords" value={formatKeywords(localization?.keywords)} />
-              <Field label="Localization slug" value={localization?.slug} />
+              <Field
+                label="Localization slug"
+                value={<MissingValue value={localization?.slug} />}
+              />
             </div>
           </Panel>
 
           <Panel title="Source lineage and citations">
             {article.sources.length === 0 ? (
-              <p className="muted">No source lineage was returned.</p>
+              <p className="text-muted-foreground">No source lineage was returned.</p>
             ) : (
-              <div className="source-list">
+              <div className="grid gap-3">
                 {article.sources.map((source) => (
-                  <div className="source-item" key={source.articleSourceId}>
-                    <div className="badge-group">
-                      <span className="badge">{source.role}</span>
-                      {source.isClusterPrimary ? <span className="badge badge-ok">cluster primary</span> : null}
-                      <span className={source.source.isActive ? "badge badge-ok" : "badge badge-warn"}>
+                  <div
+                    className="border-b pb-3 last:border-b-0 last:pb-0"
+                    key={source.articleSourceId}
+                  >
+                    <div className="flex flex-wrap gap-1.5">
+                      <Badge variant="secondary">{source.role}</Badge>
+                      {source.isClusterPrimary ? <Badge>cluster primary</Badge> : null}
+                      <Badge variant={source.source.isActive ? "default" : "outline"}>
                         {source.source.kind}
-                      </span>
+                      </Badge>
                     </div>
-                    <h3 className="row-title">{source.sourceItem.title}</h3>
-                    <p className="row-meta">
+                    <h3 className="mt-2 font-bold">{source.sourceItem.title}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
                       {source.source.name} - {source.source.slug} - {source.sourceItem.language}
                     </p>
-                    <p>{source.sourceItem.summary ?? source.sourceItem.contentText ?? "No summary available."}</p>
+                    <p>
+                      {source.sourceItem.summary ??
+                        source.sourceItem.contentText ??
+                        "No summary available."}
+                    </p>
                     {source.sourceItem.externalUrl === null ? (
-                      <p className="muted">No external citation URL.</p>
+                      <p className="text-muted-foreground">No external citation URL.</p>
                     ) : (
-                      <a className="text-link" href={source.sourceItem.externalUrl}>
+                      <a
+                        className="font-bold text-accent underline-offset-4 hover:underline"
+                        href={source.sourceItem.externalUrl}
+                      >
                         Open source
                       </a>
                     )}
-                    <p className="row-meta">
+                    <p className="mt-1 text-sm text-muted-foreground">
                       Published {formatDateTime(source.sourceItem.publishedAt)} - fetched{" "}
                       {formatDateTime(source.sourceItem.fetchedAt)}
                     </p>
@@ -117,13 +133,16 @@ function ArticleReviewDetail({ article }: { article: ArticleReviewArticle }) {
           </Panel>
         </div>
 
-        <aside className="stack" aria-label="Review metadata">
+        <aside className="flex flex-col gap-4" aria-label="Review metadata">
           <Panel title="Review state">
-            <div className="badge-group">
-              <StatusBadge status={article.status} />
-              <ValidationBadge ok={article.validation.ok} issueCount={article.validation.issues.length} />
+            <div className="flex flex-wrap gap-1.5">
+              <ArticleStatusBadge status={article.status} />
+              <ValidationBadge
+                ok={article.validation.ok}
+                issueCount={article.validation.issues.length}
+              />
             </div>
-            <div className="field-grid">
+            <div className="grid gap-3 md:grid-cols-2">
               <Field label="Article id" value={article.id} />
               <Field label="Slug" value={article.slug} />
               <Field label="Primary locale" value={article.primaryLocale} />
@@ -138,7 +157,7 @@ function ArticleReviewDetail({ article }: { article: ArticleReviewArticle }) {
           </Panel>
 
           <Panel title="Category and cluster">
-            <div className="field-grid">
+            <div className="grid gap-3 md:grid-cols-2">
               <Field label="Category" value={article.category.name} />
               <Field label="Category slug" value={article.category.slug} />
               <Field label="Category active" value={article.category.isActive ? "yes" : "no"} />
@@ -150,9 +169,11 @@ function ArticleReviewDetail({ article }: { article: ArticleReviewArticle }) {
 
           <Panel title="Validation state">
             {article.validation.ok ? (
-              <p className="muted">This review draft is eligible for ready status.</p>
+              <p className="text-muted-foreground">
+                This review draft is eligible for ready status.
+              </p>
             ) : (
-              <ul>
+              <ul className="list-disc pl-5">
                 {article.validation.issues.map((issue) => (
                   <li key={`${issue.code}:${issue.message}`}>
                     <strong>{issue.code}</strong>: {issue.message}
@@ -163,51 +184,19 @@ function ArticleReviewDetail({ article }: { article: ArticleReviewArticle }) {
           </Panel>
 
           <Panel title="Review notes">
-            <p className="article-body">{article.reviewNotes ?? "No review notes recorded."}</p>
+            <p className="whitespace-pre-wrap">
+              {article.reviewNotes ?? "No review notes recorded."}
+            </p>
           </Panel>
 
           <Panel title="Generation metadata summary">
-            <pre className="code-block">{formatJsonSummary(article.generationMetadata)}</pre>
+            <pre className="overflow-auto rounded-md bg-foreground p-3 text-sm whitespace-pre-wrap text-background">
+              {formatJsonSummary(article.generationMetadata)}
+            </pre>
           </Panel>
         </aside>
       </div>
-    </main>
-  );
-}
-
-function Panel({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="panel" aria-labelledby={headingId(title)}>
-      <div className="panel-header">
-        <h2 className="panel-title" id={headingId(title)}>
-          {title}
-        </h2>
-      </div>
-      <div className="panel-body stack">{children}</div>
-    </section>
-  );
-}
-
-function Field({ label, value }: { label: string; value: string | null | undefined }) {
-  return (
-    <div className="field">
-      <p className="field-label">{label}</p>
-      <p className="field-value">{isBlank(value) ? "Not provided" : value}</p>
-    </div>
-  );
-}
-
-function StatusBadge({ status }: { status: ArticleReviewArticle["status"] }) {
-  const className = status === "failed" ? "badge badge-danger" : "badge";
-
-  return <span className={className}>{status}</span>;
-}
-
-function ValidationBadge({ ok, issueCount }: { ok: boolean; issueCount: number }) {
-  return (
-    <span className={ok ? "badge badge-ok" : "badge badge-warn"}>
-      {ok ? "ready-valid" : `${issueCount} validation issue${issueCount === 1 ? "" : "s"}`}
-    </span>
+    </WorkspaceShell>
   );
 }
 
@@ -232,12 +221,4 @@ function formatDateTime(value: Date | null): string {
 
 function formatJsonSummary(value: ArticleReviewArticle["generationMetadata"]): string {
   return JSON.stringify(value, null, 2);
-}
-
-function headingId(title: string): string {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-}
-
-function isBlank(value: string | null | undefined): boolean {
-  return value === undefined || value === null || value.trim().length === 0;
 }

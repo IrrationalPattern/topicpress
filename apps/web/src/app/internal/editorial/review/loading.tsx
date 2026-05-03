@@ -1,10 +1,12 @@
+import { StateMessage } from "@/components/app/state-message";
+import { WorkspaceShell } from "@/components/app/workspace-shell";
+
 export default function EditorialReviewLoading() {
   return (
-    <main className="workspace-shell">
-      <div className="state-box" role="status" aria-live="polite">
-        <h1 className="panel-title">Loading editorial review</h1>
-        <p className="muted">Fetching reviewable drafts from the local database.</p>
-      </div>
-    </main>
+    <WorkspaceShell>
+      <StateMessage role="status" title="Loading editorial review" titleAs="h1">
+        <p>Fetching reviewable drafts from the local database.</p>
+      </StateMessage>
+    </WorkspaceShell>
   );
 }

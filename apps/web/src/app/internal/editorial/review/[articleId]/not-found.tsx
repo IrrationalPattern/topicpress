@@ -1,15 +1,23 @@
 import Link from "next/link";
 
+import { StateMessage } from "@/components/app/state-message";
+import { WorkspaceShell } from "@/components/app/workspace-shell";
+import { Button } from "@/components/ui/button";
+
 export default function ArticleReviewNotFound() {
   return (
-    <main className="workspace-shell">
-      <div className="state-box">
-        <h1 className="panel-title">Article review not found</h1>
-        <p className="muted">The requested draft is not available for review.</p>
-        <Link className="button-link" href="/internal/editorial/review">
-          Back to review list
-        </Link>
-      </div>
-    </main>
+    <WorkspaceShell>
+      <StateMessage
+        action={
+          <Button asChild variant="outline">
+            <Link href="/internal/editorial/review">Back to review list</Link>
+          </Button>
+        }
+        title="Article review not found"
+        titleAs="h1"
+      >
+        <p>The requested draft is not available for review.</p>
+      </StateMessage>
+    </WorkspaceShell>
   );
 }

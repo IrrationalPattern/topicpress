@@ -1,5 +1,10 @@
 import Link from "next/link";
 
+import { ArticleStatusBadge, ValidationBadge } from "@/components/app/article-badges";
+import { Panel } from "@/components/app/panel";
+import { WorkspaceHeader } from "@/components/app/workspace-header";
+import { WorkspaceShell } from "@/components/app/workspace-shell";
+
 import { getReviewableArticles, type ArticleReviewArticle } from "../../../../lib/article-review";
 
 export const metadata = {
@@ -12,42 +17,29 @@ export default async function EditorialReviewPage() {
   const articles = await getReviewableArticles();
 
   return (
-    <main className="workspace-shell">
-      <header className="workspace-header">
-        <div>
-          <p className="workspace-kicker">Internal editorial</p>
-          <h1 className="workspace-title">Generated draft review</h1>
-          <p className="workspace-subtitle">
-            Inspect generated drafts and open an article to run review-gated publishing actions.
-          </p>
-        </div>
-      </header>
+    <WorkspaceShell>
+      <WorkspaceHeader
+        kicker="Internal editorial"
+        subtitle="Inspect generated drafts and open an article to run review-gated publishing actions."
+        title="Generated draft review"
+      />
 
-      <section className="panel" aria-labelledby="review-list-title">
-        <div className="panel-header">
-          <div>
-            <h2 className="panel-title" id="review-list-title">
-              Reviewable articles
-            </h2>
-            <p className="row-meta">
-              {articles.length} reviewable article{articles.length === 1 ? "" : "s"} loaded
-            </p>
-          </div>
-        </div>
-
+      <Panel
+        description={`${articles.length} reviewable article${articles.length === 1 ? "" : "s"} loaded`}
+        title="Reviewable articles"
+        {...(articles.length === 0 ? {} : { contentClassName: "gap-2 p-3" })}
+      >
         {articles.length === 0 ? (
-          <div className="panel-body">
-            <EmptyReviewState />
-          </div>
+          <EmptyReviewState />
         ) : (
-          <div className="review-list">
+          <div className="grid gap-2">
             {articles.map((article) => (
               <ReviewArticleRow key={article.id} article={article} />
             ))}
           </div>
         )}
-      </section>
-    </main>
+      </Panel>
+    </WorkspaceShell>
   );
 }
 
@@ -57,28 +49,35 @@ function ReviewArticleRow({ article }: { article: ArticleReviewArticle }) {
   const metadataKeys = getObjectKeys(article.generationMetadata);
 
   return (
-    <Link className="review-row" href={`/internal/editorial/review/${article.id}`}>
-      <div>
-        <p className="row-title">{title}</p>
-        <p className="row-meta">
+    <Link
+      className="grid grid-cols-1 items-center gap-3 rounded-lg border bg-card p-3 text-card-foreground no-underline transition-colors hover:border-accent md:grid-cols-[minmax(0,1.6fr)_minmax(140px,0.6fr)_minmax(150px,0.8fr)_minmax(140px,0.6fr)]"
+      href={`/internal/editorial/review/${article.id}`}
+    >
+      <div className="min-w-0">
+        <p className="font-bold">{title}</p>
+        <p className="mt-1 text-sm text-muted-foreground">
           {article.slug} - {article.primaryLocale} - updated {formatDateTime(article.updatedAt)}
         </p>
       </div>
-      <div className="badge-group" aria-label="Article status">
-        <StatusBadge status={article.status} />
+      <div className="flex flex-wrap gap-1.5" aria-label="Article status">
+        <ArticleStatusBadge status={article.status} />
         <ValidationBadge ok={article.validation.ok} issueCount={article.validation.issues.length} />
       </div>
       <div>
-        <p className="field-label">Category</p>
-        <p className="field-value">{article.category.name}</p>
-        <p className="row-meta">{article.category.slug}</p>
+        <p className="mb-1 text-xs font-bold tracking-normal text-muted-foreground uppercase">
+          Category
+        </p>
+        <p>{article.category.name}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{article.category.slug}</p>
       </div>
       <div>
-        <p className="field-label">Signals</p>
-        <p className="field-value">
+        <p className="mb-1 text-xs font-bold tracking-normal text-muted-foreground uppercase">
+          Signals
+        </p>
+        <p>
           {sourceCount} source{sourceCount === 1 ? "" : "s"}
         </p>
-        <p className="row-meta">
+        <p className="mt-1 text-sm text-muted-foreground">
           {metadataKeys.length} metadata key{metadataKeys.length === 1 ? "" : "s"}
         </p>
       </div>
@@ -88,27 +87,13 @@ function ReviewArticleRow({ article }: { article: ArticleReviewArticle }) {
 
 function EmptyReviewState() {
   return (
-    <div className="state-box">
-      <h2 className="panel-title">No reviewable drafts</h2>
-      <p className="muted">
-        No draft, review, or ready articles were returned. Generate draft articles or check the local
-        database connection if drafts were expected.
+    <div className="rounded-lg border border-dashed p-6">
+      <h3 className="font-heading text-lg leading-snug font-semibold">No reviewable drafts</h3>
+      <p className="mt-2 text-muted-foreground">
+        No draft, review, or ready articles were returned. Generate draft articles or check the
+        local database connection if drafts were expected.
       </p>
     </div>
-  );
-}
-
-function StatusBadge({ status }: { status: ArticleReviewArticle["status"] }) {
-  const className = status === "failed" ? "badge badge-danger" : "badge";
-
-  return <span className={className}>{status}</span>;
-}
-
-function ValidationBadge({ ok, issueCount }: { ok: boolean; issueCount: number }) {
-  return (
-    <span className={ok ? "badge badge-ok" : "badge badge-warn"}>
-      {ok ? "ready-valid" : `${issueCount} validation issue${issueCount === 1 ? "" : "s"}`}
-    </span>
   );
 }
 

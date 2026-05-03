@@ -23,7 +23,12 @@ export async function reviewArticleAction(
   const intent = readFormText(formData, "intent") as ReviewActionIntent | null;
 
   if (articleId === null) {
-    return formFailure(refreshToken, "missing_article", "Missing article", "Article id was not submitted.");
+    return formFailure(
+      refreshToken,
+      "missing_article",
+      "Missing article",
+      "Article id was not submitted.",
+    );
   }
 
   switch (intent) {
@@ -49,7 +54,12 @@ export async function reviewArticleAction(
         shouldRefresh: false,
       };
     default:
-      return formFailure(refreshToken, "unknown_action", "Unknown action", "The submitted review action is not recognized.");
+      return formFailure(
+        refreshToken,
+        "unknown_action",
+        "Unknown action",
+        "The submitted review action is not recognized.",
+      );
   }
 }
 

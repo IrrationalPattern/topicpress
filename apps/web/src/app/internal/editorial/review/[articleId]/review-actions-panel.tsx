@@ -4,6 +4,13 @@ import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 
+import { ActionCopy, ActionRow } from "@/components/app/action-row";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+
 import { reviewArticleAction } from "./actions";
 import {
   initialReviewActionFeedback,
@@ -30,12 +37,16 @@ export function ReviewActionsPanel({ articleId, status }: ReviewActionsPanelProp
   }, [feedback.refreshToken, feedback.shouldRefresh, router]);
 
   return (
-    <div className="action-stack">
+    <div className="flex flex-col gap-2">
       <ActionForm
         articleId={articleId}
         disabled={status !== "draft"}
         formAction={formAction}
-        helpText={status === "draft" ? "Submit the generated draft for editorial review." : "Available for draft articles."}
+        helpText={
+          status === "draft"
+            ? "Submit the generated draft for editorial review."
+            : "Available for draft articles."
+        }
         intent="request_review"
         label="Move to review"
       />
@@ -66,13 +77,12 @@ export function ReviewActionsPanel({ articleId, status }: ReviewActionsPanelProp
         label={status === "published" ? "Check published" : "Publish"}
         variant="primary"
       />
-      <div className="action-row action-row-muted">
-        <div>
-          <p className="action-title">Hold</p>
-          <p className="action-help">Visible state remains unchanged; no backend transition is submitted.</p>
-        </div>
-        <span className="badge">no-op</span>
-      </div>
+      <ActionRow action={<Badge variant="secondary">no-op</Badge>}>
+        <ActionCopy
+          helpText="Visible state remains unchanged; no backend transition is submitted."
+          title="Hold"
+        />
+      </ActionRow>
       <ActionFeedback feedback={feedback} />
     </div>
   );
@@ -96,13 +106,13 @@ function ActionForm({
   readonly variant?: "primary" | "secondary";
 }) {
   return (
-    <form action={formAction} className="action-row">
+    <form
+      action={formAction}
+      className="grid grid-cols-1 gap-3 border-b py-2.5 last:border-b-0 md:grid-cols-[minmax(0,1fr)_max-content] md:items-center"
+    >
       <input name="articleId" type="hidden" value={articleId} />
       <input name="intent" type="hidden" value={intent} />
-      <div>
-        <p className="action-title">{label}</p>
-        <p className="action-help">{helpText}</p>
-      </div>
+      <ActionCopy helpText={helpText} title={label} />
       <SubmitButton disabled={disabled} variant={variant}>
         {label}
       </SubmitButton>
@@ -122,14 +132,19 @@ function FailedActionForm({
   readonly isPending: boolean;
 }) {
   return (
-    <form action={formAction} className="action-row action-row-with-input">
+    <form
+      action={formAction}
+      className="grid grid-cols-1 gap-3 border-b py-2.5 last:border-b-0 md:grid-cols-[minmax(0,1fr)_max-content] md:items-end"
+    >
       <input name="articleId" type="hidden" value={articleId} />
       <input name="intent" type="hidden" value="mark_failed" />
-      <label className="reason-field">
-        <span className="action-title">Reject failed</span>
-        <span className="action-help">A non-empty reason is required and stored as review notes.</span>
-        <textarea
-          className="reason-input"
+      <label className="grid min-w-0">
+        <span className="font-bold">Reject failed</span>
+        <span className="text-sm text-muted-foreground">
+          A non-empty reason is required and stored as review notes.
+        </span>
+        <Textarea
+          className="mt-2"
           disabled={disabled || isPending}
           name="reason"
           placeholder="Reason"
@@ -154,11 +169,13 @@ function SubmitButton({
   readonly variant: "danger" | "primary" | "secondary";
 }) {
   const { pending } = useFormStatus();
+  const buttonVariant =
+    variant === "danger" ? "destructive" : variant === "primary" ? "default" : "outline";
 
   return (
-    <button className={`action-button action-button-${variant}`} disabled={disabled || pending} type="submit">
+    <Button disabled={disabled || pending} type="submit" variant={buttonVariant}>
       {pending ? "Working..." : children}
-    </button>
+    </Button>
   );
 }
 
@@ -168,33 +185,38 @@ function ActionFeedback({ feedback }: { readonly feedback: ReviewActionFeedback 
   }
 
   return (
-    <div
+    <Alert
       aria-live="polite"
-      className={feedback.ok ? "action-feedback action-feedback-ok" : "action-feedback action-feedback-error"}
+      className={cn(feedback.ok ? "border-accent bg-accent/10" : undefined)}
+      variant={feedback.ok ? "default" : "destructive"}
       role="status"
     >
-      <div className="action-feedback-header">
-        <strong>{feedback.title}</strong>
-        <div className="badge-group">
-          {feedback.code === null ? null : <span className="badge badge-danger">{feedback.code}</span>}
-          {feedback.outcome === null ? null : <span className="badge badge-ok">{feedback.outcome}</span>}
+      <AlertTitle>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span>{feedback.title}</span>
+          <div className="flex flex-wrap gap-1.5">
+            {feedback.code === null ? null : <Badge variant="destructive">{feedback.code}</Badge>}
+            {feedback.outcome === null ? null : <Badge>{feedback.outcome}</Badge>}
+          </div>
         </div>
-      </div>
-      <p>{feedback.message}</p>
-      {feedback.pipelineRunId === null ? null : (
-        <p className="row-meta">
-          Pipeline run {feedback.pipelineRunId} - {feedback.pipelineRunStatus}
-        </p>
-      )}
-      {feedback.issues.length === 0 ? null : (
-        <ul className="action-issues">
-          {feedback.issues.map((issue) => (
-            <li key={`${issue.code}:${issue.message}`}>
-              <strong>{issue.code}</strong>: {issue.message}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+      </AlertTitle>
+      <AlertDescription>
+        <p>{feedback.message}</p>
+        {feedback.pipelineRunId === null ? null : (
+          <p className="mt-1 text-sm">
+            Pipeline run {feedback.pipelineRunId} - {feedback.pipelineRunStatus}
+          </p>
+        )}
+        {feedback.issues.length === 0 ? null : (
+          <ul className="mt-2 list-disc pl-5">
+            {feedback.issues.map((issue) => (
+              <li key={`${issue.code}:${issue.message}`}>
+                <strong>{issue.code}</strong>: {issue.message}
+              </li>
+            ))}
+          </ul>
+        )}
+      </AlertDescription>
+    </Alert>
   );
 }
