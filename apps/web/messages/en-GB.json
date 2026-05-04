@@ -4,7 +4,6 @@
       "footerLocale": "Current edition",
       "home": "Home",
       "localeSwitcher": "Language",
-      "primaryNav": "Primary",
       "skipContent": "Skip to content"
     },
     "hero": {
@@ -19,6 +18,12 @@
       "slugLabel": "Slug",
       "emptyStateTitle": "No published articles yet",
       "emptyStateDescription": "Reviewed articles will appear here after they are approved for publication."
+    },
+    "categories": {
+      "articlesAriaLabel": "Published articles in {category}",
+      "articleCount": "{count, plural, =0 {No published articles in this category yet} one {# published article in this category} other {# published articles in this category}}",
+      "emptyStateTitle": "No articles in this category yet",
+      "emptyStateDescription": "Published {category} articles will appear here after review."
     },
     "states": {
       "loadingLabel": "Loading public homepage",

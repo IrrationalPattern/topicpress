@@ -1,63 +1,61 @@
-import { Globe } from "lucide-react";
+"use client";
 
-import { Button } from "@/components/ui/button";
+import * as React from "react";
+
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { getLocalePath, routing, type AppLocale } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 
 export interface LocaleSwitcherProps {
   readonly className?: string;
   readonly currentLocale: AppLocale;
-  readonly homeLabel: string;
   readonly label: string;
 }
 
-export function LocaleSwitcher({ className, currentLocale, homeLabel, label }: LocaleSwitcherProps) {
+export function LocaleSwitcher({ className, currentLocale, label }: LocaleSwitcherProps) {
+  const currentLocaleName = formatLocaleName(currentLocale, currentLocale);
+
   return (
     <nav
       aria-label={label}
       className={cn("flex flex-wrap items-center gap-2 text-sm text-muted-foreground", className)}
     >
-      <span className="inline-flex items-center gap-1.5 font-medium">
-        <Globe aria-hidden="true" className="size-4" />
-        {label}
-      </span>
-      <div className="flex flex-wrap items-center gap-1">
-        {routing.locales.map((locale) => {
-          const isActive = locale === currentLocale;
+      <Select
+        onValueChange={(value) => {
+          const nextLocale = value as AppLocale;
 
-          return (
-            <Button
-              asChild
-              key={locale}
-              size="sm"
-              variant={isActive ? "secondary" : "ghost"}
-            >
-              <a
-                aria-current={isActive ? "page" : undefined}
-                aria-label={formatLocaleLinkLabel(locale, currentLocale, homeLabel)}
-                href={getLocalePath(locale)}
-                hrefLang={locale}
-                lang={locale}
-              >
-                <span className="hidden sm:inline">{formatLocaleName(locale, currentLocale)}</span>
-                <span aria-hidden="true" className="sm:hidden">
-                  {formatShortLocale(locale)}
-                </span>
-              </a>
-            </Button>
-          );
-        })}
-      </div>
+          if (nextLocale !== currentLocale) {
+            window.location.assign(getLocalePath(nextLocale));
+          }
+        }}
+        value={currentLocale}
+      >
+        <SelectTrigger
+          aria-label={label}
+          className="min-w-44 bg-secondary text-secondary-foreground hover:bg-secondary/80"
+          size="sm"
+        >
+          <SelectValue placeholder={currentLocaleName}>{currentLocaleName}</SelectValue>
+        </SelectTrigger>
+        <SelectContent align="end">
+          <SelectGroup>
+            {routing.locales.map((locale) => (
+              <SelectItem key={locale} lang={locale} value={locale}>
+                {formatLocaleName(locale, currentLocale)}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
     </nav>
   );
-}
-
-function formatLocaleLinkLabel(
-  locale: AppLocale,
-  displayLocale: AppLocale,
-  homeLabel: string,
-): string {
-  return `${formatLocaleName(locale, displayLocale)} ${homeLabel}`;
 }
 
 function formatLocaleName(locale: AppLocale, displayLocale: AppLocale): string {
@@ -66,8 +64,4 @@ function formatLocaleName(locale: AppLocale, displayLocale: AppLocale): string {
   } catch {
     return locale;
   }
-}
-
-function formatShortLocale(locale: AppLocale): string {
-  return locale.split("-")[0]?.toUpperCase() ?? locale.toUpperCase();
 }

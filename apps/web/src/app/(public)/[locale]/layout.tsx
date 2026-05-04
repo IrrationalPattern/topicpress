@@ -37,7 +37,6 @@ export default async function PublicLocaleLayout({ children, params }: PublicLoc
             footerLocaleLabel={t("shell.footerLocale")}
             homeLabel={t("shell.home")}
             localeSwitcherLabel={t("shell.localeSwitcher")}
-            primaryNavLabel={t("shell.primaryNav")}
             skipContentLabel={t("shell.skipContent")}
           >
             {children}

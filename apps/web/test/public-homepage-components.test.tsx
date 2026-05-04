@@ -5,6 +5,7 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { ArticleList } from "../src/components/public/article-list.tsx";
+import { LocaleSwitcher } from "../src/components/public/locale-switcher.tsx";
 
 function runTest(name: string, testBody: () => void): void {
   testBody();
@@ -64,4 +65,13 @@ runTest("article list renders the empty state when no articles are available", (
   assert.match(html, /No published articles/);
   assert.match(html, /Published articles will appear here after review/);
   assert.doesNotMatch(html, /<li/);
+});
+
+runTest("locale switcher renders a selected shadcn combobox instead of language links", () => {
+  const html = renderToStaticMarkup(<LocaleSwitcher currentLocale="en-GB" label="Language" />);
+
+  assert.match(html, /role="combobox"/);
+  assert.match(html, /data-slot="select-trigger"/);
+  assert.match(html, /British English/);
+  assert.doesNotMatch(html, /\shref=/);
 });

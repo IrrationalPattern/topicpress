@@ -1,6 +1,3 @@
-import { Home } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
 import { getLocalePath, type AppLocale } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 
@@ -11,9 +8,7 @@ export interface SiteHeaderProps {
   readonly currentLocale: AppLocale;
   readonly homeLabel: string;
   readonly localeSwitcherLabel: string;
-  readonly primaryNavLabel: string;
   readonly siteName: string;
-  readonly tagline: string;
 }
 
 export function SiteHeader({
@@ -21,9 +16,7 @@ export function SiteHeader({
   currentLocale,
   homeLabel,
   localeSwitcherLabel,
-  primaryNavLabel,
   siteName,
-  tagline,
 }: SiteHeaderProps) {
   const homePath = getLocalePath(currentLocale);
 
@@ -39,24 +32,11 @@ export function SiteHeader({
             <span className="font-heading text-2xl leading-none font-semibold text-foreground">
               {siteName}
             </span>
-            <span className="max-w-2xl text-sm leading-snug text-muted-foreground">{tagline}</span>
           </a>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between md:justify-end">
-          <nav aria-label={primaryNavLabel} className="flex items-center gap-1">
-            <Button asChild size="sm" variant="ghost">
-              <a aria-current="page" href={homePath}>
-                <Home aria-hidden="true" className="size-4" />
-                {homeLabel}
-              </a>
-            </Button>
-          </nav>
-          <LocaleSwitcher
-            currentLocale={currentLocale}
-            homeLabel={homeLabel}
-            label={localeSwitcherLabel}
-          />
+          <LocaleSwitcher currentLocale={currentLocale} label={localeSwitcherLabel} />
         </div>
       </div>
     </header>

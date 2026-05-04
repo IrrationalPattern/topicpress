@@ -8,7 +8,7 @@
     "build": "next build",
     "lint": "eslint \"src/**/*.{ts,tsx}\" next.config.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types test/locale-routing.test.ts && tsx test/public-homepage-components.test.tsx && tsx test/public-homepage-route.test.tsx"
+    "test": "node --experimental-strip-types test/locale-routing.test.ts && tsx test/public-category-route.test.ts && tsx test/public-homepage-components.test.tsx && tsx test/public-homepage-route.test.tsx && tsx test/public-category-components.test.tsx && tsx test/public-category-page.test.ts"
   },
   "dependencies": {
     "@topicpress/config": "workspace:*",

@@ -14,7 +14,7 @@
     "build": "tsc -p tsconfig.json",
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "test": "tsc -p tsconfig.json && node test/seed-sync.test.mjs && node test/feed-ingestion.test.mjs && node test/source-item-persistence.test.mjs && node test/clustering.test.mjs && node test/draft-creation.test.mjs && node test/article-review.test.mjs && node test/article-publishing.test.mjs && node test/public-homepage.test.mjs && node test/ingestion-run.test.mjs && node test/cluster-generation-run.test.mjs && node test/article-publish-cli.test.mjs && node test/cluster-generate-cli.test.mjs && node test/ingest-cli.test.mjs"
+    "test": "tsc -p tsconfig.json && node test/seed-sync.test.mjs && node test/feed-ingestion.test.mjs && node test/source-item-persistence.test.mjs && node test/clustering.test.mjs && node test/draft-creation.test.mjs && node test/article-review.test.mjs && node test/article-publishing.test.mjs && node test/public-homepage.test.mjs && node test/public-category-listing.test.mjs && node test/ingestion-run.test.mjs && node test/cluster-generation-run.test.mjs && node test/article-publish-cli.test.mjs && node test/cluster-generate-cli.test.mjs && node test/ingest-cli.test.mjs"
   },
   "exports": {
     ".": {

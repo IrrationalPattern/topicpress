@@ -18,6 +18,7 @@ export interface ArticleListProps {
   readonly emptyStateAction?: React.ReactNode;
   readonly emptyStateDescription?: React.ReactNode;
   readonly emptyStateTitle: React.ReactNode;
+  readonly getCategoryHref?: ((article: HomepageArticle) => string | undefined) | undefined;
   readonly heading?: React.ReactNode;
   readonly headingAs?: ArticleListHeadingLevel | undefined;
   readonly locale: string;
@@ -34,6 +35,7 @@ export function ArticleList({
   emptyStateAction,
   emptyStateDescription,
   emptyStateTitle,
+  getCategoryHref,
   heading,
   headingAs: Heading = "h2",
   locale,
@@ -69,6 +71,7 @@ export function ArticleList({
             <li key={article.id} className="min-w-0">
               <ArticleCard
                 article={article}
+                categoryHref={getCategoryHref?.(article)}
                 categoryLabel={categoryLabel}
                 dateLabel={dateLabel}
                 locale={locale}

@@ -25,7 +25,7 @@ const article = {
   publishedAt: new Date("2026-05-03T09:30:00.000Z"),
 } satisfies HomepageArticle;
 
-runTest("homepage composition renders populated published state without deferred links", () => {
+runTest("homepage composition renders populated published state with category links only", () => {
   const html = renderToStaticMarkup(
     <HomepageContent
       articleListAriaLabel="Published homepage articles"
@@ -36,20 +36,18 @@ runTest("homepage composition renders populated published state without deferred
       emptyStateDescription="Reviewed articles will appear here."
       emptyStateTitle="No published articles yet"
       heading="Latest briefings"
-      kicker="AI briefing"
       locale="en-GB"
-      publishedCountLabel="1 published article"
       slugLabel="Slug"
-      title="AI Landscape Brief"
     />,
   );
 
-  assert.match(html, /AI Landscape Brief/);
-  assert.match(html, /1 published article/);
   assert.match(html, /Latest briefings/);
   assert.match(html, /Published AI brief/);
   assert.match(html, /published-ai-brief/);
-  assert.doesNotMatch(html, /\shref=/);
+  assert.match(html, /href="\/en-gb\/categories\/news"/);
+  assert.doesNotMatch(html, />AI briefing</);
+  assert.doesNotMatch(html, /1 published article/);
+  assert.doesNotMatch(html, /href="[^"]*\/articles\//);
 });
 
 runTest("homepage composition preserves explicit empty state", () => {
@@ -63,11 +61,8 @@ runTest("homepage composition preserves explicit empty state", () => {
       emptyStateDescription="Reviewed articles will appear here."
       emptyStateTitle="No published articles yet"
       heading="Latest briefings"
-      kicker="AI briefing"
       locale="en-GB"
-      publishedCountLabel="No published articles yet"
       slugLabel="Slug"
-      title="AI Landscape Brief"
     />,
   );
 

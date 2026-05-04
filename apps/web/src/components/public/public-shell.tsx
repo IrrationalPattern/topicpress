@@ -14,7 +14,6 @@ export interface PublicShellProps {
   readonly footerLocaleLabel: string;
   readonly homeLabel: string;
   readonly localeSwitcherLabel: string;
-  readonly primaryNavLabel: string;
   readonly skipContentLabel: string;
 }
 
@@ -25,14 +24,8 @@ export function PublicShell({
   footerLocaleLabel,
   homeLabel,
   localeSwitcherLabel,
-  primaryNavLabel,
   skipContentLabel,
 }: PublicShellProps) {
-  const tagline =
-    siteConfig.identity.tagline[currentLocale] ??
-    siteConfig.identity.tagline[siteConfig.locales.defaultLocale] ??
-    "";
-
   return (
     <div className={cn("flex min-h-dvh flex-col bg-background text-foreground", className)}>
       <a
@@ -45,9 +38,7 @@ export function PublicShell({
         currentLocale={currentLocale}
         homeLabel={homeLabel}
         localeSwitcherLabel={localeSwitcherLabel}
-        primaryNavLabel={primaryNavLabel}
         siteName={siteConfig.identity.name}
-        tagline={tagline}
       />
       <main
         className="mx-auto w-[min(1180px,calc(100%_-_32px))] flex-1 py-8 md:py-10"

@@ -1,5 +1,6 @@
 import { CalendarDays, FileText } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import * as React from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,7 @@ export type ArticleCardHeadingLevel = "h2" | "h3";
 
 export interface ArticleCardProps {
   readonly article: HomepageArticle;
+  readonly categoryHref?: string | undefined;
   readonly categoryLabel?: string | undefined;
   readonly className?: string | undefined;
   readonly dateLabel?: string | undefined;
@@ -21,6 +23,7 @@ export interface ArticleCardProps {
 
 export function ArticleCard({
   article,
+  categoryHref,
   categoryLabel,
   className,
   dateLabel,
@@ -52,12 +55,11 @@ export function ArticleCard({
 
         <CardHeader className="gap-3 pt-4">
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <Badge className="max-w-full" variant="secondary">
-              {categoryLabel === undefined ? null : (
-                <span className="sr-only">{categoryLabel}: </span>
-              )}
-              <span className="truncate">{article.category.label}</span>
-            </Badge>
+            <ArticleCategoryBadge
+              href={categoryHref}
+              label={categoryLabel}
+              value={article.category.label}
+            />
             <span className="inline-flex min-w-0 items-center gap-1.5">
               <CalendarDays aria-hidden="true" className="size-3.5 shrink-0" />
               <time
@@ -92,6 +94,35 @@ export function ArticleCard({
         </CardContent>
       </Card>
     </article>
+  );
+}
+
+interface ArticleCategoryBadgeProps {
+  readonly href?: string | undefined;
+  readonly label?: string | undefined;
+  readonly value: string;
+}
+
+function ArticleCategoryBadge({ href, label, value }: ArticleCategoryBadgeProps) {
+  const content = (
+    <>
+      {label === undefined ? null : <span className="sr-only">{label}: </span>}
+      <span className="truncate">{value}</span>
+    </>
+  );
+
+  if (href === undefined) {
+    return (
+      <Badge className="max-w-full" variant="secondary">
+        {content}
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge asChild className="max-w-full" variant="secondary">
+      <Link href={href}>{content}</Link>
+    </Badge>
   );
 }
 

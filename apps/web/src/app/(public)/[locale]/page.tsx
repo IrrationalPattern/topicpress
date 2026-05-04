@@ -70,11 +70,8 @@ export default async function PublicLocaleHomePage({
       emptyStateDescription={t("articles.emptyStateDescription")}
       emptyStateTitle={t("articles.emptyStateTitle")}
       heading={t("articles.heading")}
-      kicker={t("hero.kicker")}
       locale={locale}
-      publishedCountLabel={t("hero.publishedCount", { count: articles.length })}
       slugLabel={t("articles.slugLabel")}
-      title={siteConfig.identity.name}
     />
   );
 }
