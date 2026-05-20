@@ -1,6 +1,6 @@
 # Project State
 
-Updated: 2026-05-20
+Updated: 2026-05-21
 
 Source: imported from Obsidian MCP project notes under `Projects/Topicpress/`.
 
@@ -59,11 +59,19 @@ Recommended next slice from the latest QA handoff: article detail pages if the p
 
 ## Current contracts
 
-- Canonical project knowledge is migrating into `docs/`; Obsidian remains the source for the imported state until the migration is complete.
+- Canonical project knowledge now lives in `docs/`. Obsidian remains a legacy/migration source only when explicitly needed.
 - Repo workflow: `AGENTS.md`.
 - Current state: `docs/PROJECT_STATE.md`.
+- Product vision: `docs/product/vision.md`.
+- Architecture overview: `docs/architecture/overview.md`.
+- Ownership boundaries: `docs/architecture/boundaries.md`.
+- Accepted architecture decisions: `docs/architecture/adr/`.
 - Database schema source: `packages/db/src/schema/` and Supabase migrations.
+- Database contract summary: `docs/database/schema.md`.
 - Site configuration source: `packages/config/src/`.
+- Secrets and environment boundary: `docs/infrastructure/secrets.md`.
+- QA strategy: `docs/qa/test-strategy.md`.
+- Frontend route contract: `docs/frontend/routes.md`.
 - Frontend public routes currently implemented:
   - `/` redirects to the configured default-locale homepage.
   - `/[locale]` renders the public homepage for supported locales.
