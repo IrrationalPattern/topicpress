@@ -1,0 +1,145 @@
+id: "T000"
+title: "<clear atomic task title>"
+
+type: "<planning|contract|architecture|design|implementation|frontend|backend|infrastructure|database|migration|qa|documentation|knowledge_consolidation|bugfix|spike>"
+
+milestone: "<milestone-id>"
+target_milestone: "<milestone-id>"
+status: "draft"
+
+owner: "<person-or-agent-owner>"
+actor: "<architect|frontend_developer|backend_developer|infrastructure_developer|designer|qa_reviewer|knowledge_curator>"
+assigned_role: "<architect|frontend_developer|backend_developer|infrastructure_developer|designer|qa_reviewer|knowledge_curator>"
+
+priority: "medium"
+risk: "medium"
+
+related_specs:
+  - "<path-to-spec-or-doc>"
+
+related_issues:
+  - "<issue-id-or-link>"
+
+depends_on: []
+
+blocks: []
+
+parallel_group: null
+
+parallelization:
+  can_run_in_parallel: false
+  parallel_safety_notes:
+    - "Explain why this task can or cannot run in parallel."
+  conflict_check_required: true
+  conflict_check_fields:
+    - "depends_on"
+    - "blocks"
+    - "write_scope.allowed_paths"
+    - "contracts.required_existing"
+    - "contracts.may_update"
+
+input_context:
+  must_read:
+    - "AGENTS.md"
+    - "docs/PROJECT_STATE.md"
+    - "docs/milestones/<milestone-id>/plan.md"
+    - "docs/milestones/<milestone-id>/task-graph.yaml"
+
+  should_read: []
+
+  relevant_docs: []
+
+  relevant_files: []
+
+  do_not_read_initially: []
+
+write_scope:
+  mode: "<docs-only|read-only|bounded|full-workspace>"
+  allowed_paths:
+    - "<path-or-glob-this-task-may-edit>"
+  forbidden_paths:
+    - "<path-or-glob-this-task-must-not-edit>"
+  notes:
+    - "The agent must not write outside allowed_paths unless the task is returned to the Architect for scope expansion."
+
+scope:
+  include:
+    - "<specific work that is allowed>"
+
+  exclude:
+    - "<specific work that must not be done>"
+
+expected_changes:
+  code:
+    required: false
+    paths: []
+
+  tests:
+    required: false
+    paths: []
+
+  docs:
+    required: false
+    paths: []
+
+  config:
+    required: false
+    paths: []
+
+contracts:
+  required_existing:
+    - "<contract doc or file that must already exist before task starts>"
+
+  may_update:
+    - "<contract doc or file this task may update>"
+
+  must_not_update: []
+
+acceptance_criteria:
+  - "<observable condition that proves this task is complete>"
+  - "<another condition>"
+
+validation:
+  commands:
+    - "pnpm typecheck"
+    - "pnpm lint"
+
+  package_commands: []
+
+  manual_checks:
+    - "<manual check if needed>"
+
+handoff:
+  required: true
+  file: "docs/milestones/<milestone-id>/handoffs/T000-<slug>-handoff.md"
+
+qa:
+  required: true
+  reviewer_role: "qa_reviewer"
+  focus_areas:
+    - "Verify acceptance criteria."
+    - "Verify scope boundaries were respected."
+    - "Verify tests or validation evidence."
+    - "Verify docs were updated if needed."
+
+failure_handling:
+  if_blocked:
+    - "Set status to blocked."
+    - "Document blocker clearly."
+    - "Create follow-up task if needed."
+
+  if_qa_fails:
+    - "Set status to qa_failed."
+    - "Record QA finding IDs."
+    - "Create fix task instead of expanding scope silently."
+
+completion:
+  required_outputs:
+    - "Implementation or documented no-op"
+    - "Validation evidence"
+    - "Handoff file"
+  status_after_agent_finishes: "implemented"
+  status_after_qa_passes: "qa_passed"
+
+notes:
+  - "<optional implementation notes>"

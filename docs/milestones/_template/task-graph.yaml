@@ -1,0 +1,240 @@
+milestone:
+  id: "<milestone-id>"
+  name: "<milestone-name>"
+  target_milestone: "<target_milestone>"
+  status: "draft"
+  owner: "<person-or-agent-owner>"
+  plan_file: "docs/milestones/<milestone-id>/plan.md"
+
+task_statuses:
+  allowed:
+    - draft
+    - ready
+    - blocked
+    - assigned
+    - implemented
+    - qa_failed
+    - qa_passed
+    - merged
+    - closed
+
+task_types:
+  allowed:
+    - planning
+    - contract
+    - architecture
+    - design
+    - implementation
+    - frontend
+    - backend
+    - infrastructure
+    - database
+    - migration
+    - qa
+    - documentation
+    - knowledge_consolidation
+    - bugfix
+    - spike
+
+roles:
+  allowed:
+    - architect
+    - frontend_developer
+    - backend_developer
+    - infrastructure_developer
+    - designer
+    - qa_reviewer
+    - knowledge_curator
+    - orchestrator
+
+global_required_context:
+  - "AGENTS.md"
+  - "docs/PROJECT_STATE.md"
+  - "docs/milestones/<milestone-id>/plan.md"
+  - "docs/milestones/<milestone-id>/task-graph.yaml"
+
+validation:
+  milestone_commands:
+    - "pnpm typecheck"
+    - "pnpm lint"
+    - "pnpm test"
+    - "pnpm build"
+
+  package_command_examples:
+    - "pnpm --filter <package-name> run typecheck"
+    - "pnpm --filter <package-name> run lint"
+    - "pnpm --filter <package-name> run test"
+    - "pnpm --filter <package-name> run build"
+
+parallelization_rules:
+  allow_parallel_execution: true
+  rules:
+    - "Do not run tasks in parallel when one depends on the other."
+    - "Do not run tasks in parallel if one task blocks the other."
+    - "Do not run tasks in parallel if their write scopes overlap."
+    - "Do not run implementation tasks before required contracts exist."
+    - "Do not run QA before implementation handoff exists."
+    - "Do not mark a task closed without QA result."
+    - "Do not mark milestone complete while high-severity QA findings remain."
+
+conflict_detection:
+  check_before_parallel_dispatch:
+    - "depends_on"
+    - "blocks"
+    - "write_scope.allowed_paths"
+    - "write_scope.forbidden_paths"
+    - "contracts.required_existing"
+    - "contracts.may_update"
+    - "related_specs"
+    - "related_issues"
+
+tasks:
+  - id: "T001"
+    title: "<task title>"
+    type: "contract"
+    target_milestone: "<milestone-id>"
+    file: "docs/milestones/<milestone-id>/tasks/T001-<slug>.yaml"
+
+    status: "draft"
+    owner: "<person-or-agent-owner>"
+    actor: "architect"
+    assigned_role: "architect"
+
+    depends_on: []
+    blocks:
+      - "T002"
+
+    parallel_group: "A"
+    estimated_risk: "medium"
+
+    related_specs:
+      - "docs/PROJECT_STATE.md"
+      - "docs/architecture/adr/"
+
+    related_issues: []
+
+    write_scope:
+      mode: "docs-only"
+      allowed_paths:
+        - "docs/milestones/<milestone-id>/"
+        - "docs/architecture/"
+      forbidden_paths:
+        - "packages/"
+        - "apps/"
+        - "supabase/"
+
+    touches:
+      docs:
+        - "docs/milestones/<milestone-id>/plan.md"
+      code: []
+      config: []
+
+    required_before_start:
+      contracts: []
+      docs:
+        - "AGENTS.md"
+        - "docs/PROJECT_STATE.md"
+
+    expected_outputs:
+      - "contract_update"
+      - "task_handoff"
+
+    qa_required: true
+
+  - id: "T002"
+    title: "<task title>"
+    type: "backend"
+    target_milestone: "<milestone-id>"
+    file: "docs/milestones/<milestone-id>/tasks/T002-<slug>.yaml"
+
+    status: "draft"
+    owner: "<person-or-agent-owner>"
+    actor: "backend_developer"
+    assigned_role: "backend_developer"
+
+    depends_on:
+      - "T001"
+
+    blocks: []
+
+    parallel_group: "B"
+    estimated_risk: "medium"
+
+    related_specs:
+      - "docs/PROJECT_STATE.md"
+      - "docs/architecture/adr/ADR-001-monorepo-split-runtime.md"
+      - "docs/architecture/adr/ADR-006-database-backed-worker-execution.md"
+
+    related_issues: []
+
+    write_scope:
+      mode: "bounded"
+      allowed_paths:
+        - "apps/worker/src/"
+        - "apps/worker/test/"
+        - "packages/db/src/"
+        - "packages/config/src/"
+        - "docs/milestones/<milestone-id>/handoffs/"
+      forbidden_paths:
+        - "apps/web/src/"
+        - "supabase/"
+
+    touches:
+      docs:
+        - "docs/milestones/<milestone-id>/handoffs/"
+        - "docs/PROJECT_STATE.md"
+      code:
+        - "apps/worker/src/"
+        - "packages/db/src/"
+        - "packages/config/src/"
+      config: []
+
+    required_before_start:
+      contracts:
+        - "docs/architecture/adr/ADR-001-monorepo-split-runtime.md"
+        - "docs/architecture/adr/ADR-006-database-backed-worker-execution.md"
+      docs:
+        - "AGENTS.md"
+        - "docs/PROJECT_STATE.md"
+        - "docs/milestones/<milestone-id>/plan.md"
+
+    expected_outputs:
+      - "code_changes"
+      - "tests"
+      - "task_handoff"
+
+    qa_required: true
+
+execution_order:
+  - phase: "planning"
+    tasks:
+      - "T001"
+
+  - phase: "implementation"
+    tasks:
+      - "T002"
+
+  - phase: "qa"
+    tasks: []
+
+  - phase: "knowledge_consolidation"
+    tasks: []
+
+qa:
+  qa_report_file: "docs/milestones/<milestone-id>/qa-report.md"
+  require_qa_after_each_implementation_task: true
+  require_final_milestone_qa: true
+
+handoffs:
+  directory: "docs/milestones/<milestone-id>/handoffs"
+  required_for_roles:
+    - architect
+    - frontend_developer
+    - backend_developer
+    - infrastructure_developer
+    - designer
+    - knowledge_curator
+
+closeout:
+  file: "docs/milestones/<milestone-id>/closeout.md"
+  required: true
