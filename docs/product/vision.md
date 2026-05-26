@@ -68,7 +68,7 @@ This model keeps the MVP operationally simple and isolates site data, failures, 
 
 ## Current Status
 
-As of the current project state dated 2026-05-20, Topicpress is in MVP implementation during the public site and SEO rendering phase.
+As of the current project state updated 2026-05-26, Topicpress is in MVP implementation during the public site and SEO rendering phase.
 
 Completed foundation work includes:
 
@@ -81,6 +81,6 @@ Completed foundation work includes:
 - public homepage rendering
 - public category pages
 
-Current public routes include `/`, `/[locale]`, and `/[locale]/categories/[categorySlug]`. The internal editorial review surface exists at `/internal/editorial/review`.
+Current public routes include `/`, `/[locale]`, and `/[locale]/categories/[categorySlug]`. The internal editorial review list and detail surfaces exist under `/internal/editorial/review`.
 
 Important remaining MVP surfaces include article detail pages, sitemap and robots support, archive or pagination if needed, structured article data, production canonical behavior, and release hardening. A known release risk remains that the root `pnpm build` hangs in the web build path, even though focused public-site checks have passed for completed slices.

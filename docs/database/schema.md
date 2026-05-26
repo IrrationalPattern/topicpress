@@ -1,6 +1,6 @@
 # Database Schema
 
-Updated: 2026-05-21
+Updated: 2026-05-26
 
 ## Sources Reviewed
 
@@ -113,7 +113,7 @@ Indexes and constraints:
 
 ### `source_items`
 
-Durable normalized source material ingested from configured feeds.
+Durable source material ingested from configured feeds. Current ingestion persists normalized rows, while the status model still represents the broader lifecycle from pending through normalized, clustered, rejected, or failed states.
 
 Important columns:
 
@@ -279,7 +279,7 @@ Public pages must query only durable published content:
 - `articles.status = 'published'`
 - `articles.published_at is not null`
 - joined category is active where category context matters
-- matching `article_localizations.locale` for localized pages
+- matching requested-locale `article_localizations` rows or configured default-locale fallback rows for localized listing pages; required public fields must be usable after fallback
 
 The current public schema supports homepage and category listing routes. Article detail pages, sitemap, robots, archive, and structured article data are deferred public surfaces.
 

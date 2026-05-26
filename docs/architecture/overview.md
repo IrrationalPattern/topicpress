@@ -1,6 +1,6 @@
 # Architecture Overview
 
-Topicpress is a single-publication news publishing platform implemented as a pnpm/Turborepo monorepo. The MVP keeps deployment and runtime boundaries simple: one codebase, one independently deployed publication, one Supabase Postgres database, and separate web and worker responsibilities.
+Topicpress is a reusable news publishing platform whose MVP runtime model is one independently deployed publication per instance. The monorepo keeps deployment and runtime boundaries simple: one codebase, one publication per deployment, one Supabase Postgres database per publication, and separate web and worker responsibilities.
 
 ## Monorepo Shape
 
@@ -20,7 +20,7 @@ Root scripts in `package.json` delegate build, lint, typecheck, test, seed, inge
 
 ## Runtime Boundaries
 
-`apps/web` is the Next.js App Router application. It owns the public rendering surface, locale-aware routing, SEO metadata for implemented pages, shadcn/ui-based UI components, theme application, and the minimal internal editorial review surface under `/internal/editorial/review`. Implemented public routes are `/`, `/[locale]`, and `/[locale]/categories/[categorySlug]`; `/` redirects to the configured default-locale homepage.
+`apps/web` is the Next.js App Router application. It owns the public rendering surface, locale-aware routing, SEO metadata for implemented pages, shadcn/ui-based UI components, theme application, and the minimal internal editorial review list/detail surface under `/internal/editorial/review`. Implemented public routes are `/`, `/[locale]`, and `/[locale]/categories/[categorySlug]`; `/` redirects to the configured default-locale homepage.
 
 `apps/worker` owns long-running and failure-prone publishing work: feed ingestion, source-item persistence, clustering, draft generation, review status transitions, publication, and pipeline visibility. It exposes CLI entrypoints such as ingestion, seed sync, cluster/generate, and publish. Page requests must not perform AI generation, ingestion, clustering, or publishing work inline.
 
@@ -86,7 +86,7 @@ Public rendering only exposes durable published content. Homepage and category q
 - `articles.status = "published"`
 - non-null `articles.published_at`
 - active category rows
-- usable localization data for the requested locale or default-locale fallback
+- usable article localization data for the requested locale or configured default-locale fallback; articles missing required public fields after fallback are omitted
 
 Category pages also validate slugs against the configured active taxonomy, then resolve the active database category by `config_key`. Invalid locale or category inputs render the app's not-found path. Current listing pages cap results at 12 and do not yet implement pagination.
 
@@ -94,7 +94,7 @@ Article detail pages, archive pages, `robots.txt`, `sitemap.xml`, structured art
 
 ## Current M5 Status
 
-M5 is the public site and SEO rendering milestone. As of `docs/PROJECT_STATE.md` updated 2026-05-20:
+M5 is the public site and SEO rendering milestone. As of `docs/PROJECT_STATE.md` updated 2026-05-26:
 
 - M5.1 Public Homepage is complete after QA-511.
 - M5.2 Category Pages is complete after QA-527.

@@ -1,6 +1,6 @@
 # Frontend Routes
 
-Updated: 2026-05-21
+Updated: 2026-05-26
 
 Evidence sources:
 
@@ -29,6 +29,8 @@ Topicpress is currently in M5 Public Site and SEO Rendering. The completed publi
 | `/internal/editorial/review/[articleId]` | Internal | `apps/web/src/app/(internal)/internal/editorial/review/[articleId]/page.tsx` | Renders the internal review detail/actions surface for a single article. Unknown records use the route-local not-found UI.                    |
 
 Public article cards and category listings intentionally do not link to article detail URLs yet. Focused tests assert no `/articles/` anchors are emitted by the implemented public list surfaces.
+
+Homepage and category listing article fields prefer the requested locale and fall back to the configured default locale for slug, title, excerpt, and optional display/SEO fields. Articles are omitted from public lists when required public fields remain unavailable after fallback.
 
 ## Deferred Routes
 

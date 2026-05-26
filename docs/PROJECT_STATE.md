@@ -1,6 +1,6 @@
 # Project State
 
-Updated: 2026-05-21
+Updated: 2026-05-26
 
 Source: imported from Obsidian MCP project notes under `Projects/Topicpress/`.
 
@@ -28,7 +28,7 @@ Recommended next slice from the latest QA handoff: article detail pages if the p
 
 ## Current architecture summary
 
-- Frontend: `apps/web` is a Next.js App Router app using locale-aware public routing, `next-intl`, shadcn/ui, semantic CSS variables, and site-config-driven theme tokens. Implemented public routes are `/`, `/[locale]`, and `/[locale]/categories/[categorySlug]`. `/` redirects to the configured default-locale homepage. Internal editorial review lives under `/internal/editorial/review`.
+- Frontend: `apps/web` is a Next.js App Router app using locale-aware public routing, `next-intl`, shadcn/ui, semantic CSS variables, and site-config-driven theme tokens. Implemented public routes are `/`, `/[locale]`, and `/[locale]/categories/[categorySlug]`. `/` redirects to the configured default-locale homepage. Internal editorial review lives under `/internal/editorial/review` and `/internal/editorial/review/[articleId]`.
 - Backend: `apps/worker` owns feed ingestion, source-item persistence, clustering, AI draft generation, review/publish services, provider selection for fixture vs live OpenAI draft generation, and pipeline visibility. Long-running work stays out of page requests.
 - Database: Supabase Postgres is the system of record. `packages/db` owns the Drizzle schema, migrations, and typed schema exports. The MVP schema centers on `sources`, `categories`, `source_items`, `story_clusters`, `story_cluster_items`, `articles`, `article_localizations`, `article_sources`, and `pipeline_runs`.
 - Config: `packages/config` owns site identity, domain, locales, taxonomy, sources, editorial rules, theme tokens, SEO defaults, and seed helpers. Sources and categories are config-owned and sync to runtime rows by stable config keys.
@@ -46,6 +46,7 @@ Recommended next slice from the latest QA handoff: article detail pages if the p
 - MVP worker execution uses database-backed polling/state transitions plus `pipeline_runs` history, not a dedicated queue platform.
 - Vector search, embeddings, arbitrary scraping, comments/community features, large-team CMS workflows, and multi-tenant production database architecture are out of MVP scope.
 - Public rendering must expose only durable `published` articles with non-null `published_at`.
+- Public homepage and category listings may fall back from requested-locale article localization fields to the configured default locale, but only when required public fields such as slug, title, and excerpt are usable after fallback.
 - M5.1 and M5.2 intentionally deferred article detail pages, archive, sitemap, robots, structured article data, full release hardening, and production canonical rollout.
 
 ## Active risks
@@ -76,7 +77,8 @@ Recommended next slice from the latest QA handoff: article detail pages if the p
   - `/` redirects to the configured default-locale homepage.
   - `/[locale]` renders the public homepage for supported locales.
   - `/[locale]/categories/[categorySlug]` renders active category listing pages for supported locales.
-  - `/internal/editorial/review` is the internal review surface.
+  - `/internal/editorial/review` renders the internal review list.
+  - `/internal/editorial/review/[articleId]` renders the internal review detail/actions surface.
 - Deferred frontend routes:
   - `/[locale]/articles/[slug]`
   - `/[locale]/archive`

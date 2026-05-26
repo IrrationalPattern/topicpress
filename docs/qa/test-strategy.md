@@ -1,6 +1,6 @@
 # Topicpress Test Strategy
 
-Updated: 2026-05-21
+Updated: 2026-05-26
 
 ## Current Strategy
 
@@ -23,7 +23,7 @@ Deferred routes and surfaces remain outside focused M5.1/M5.2 validation unless 
 - production canonical rollout
 - release hardening
 
-Public rendering evidence must preserve the core product rule from ADR-005 and current project state: public homepage and category pages expose only durable `published` articles with non-null publication timestamps. Draft, review, ready, failed, unpublished, incomplete-localization, and other-category records must not appear in public lists.
+Public rendering evidence must preserve the core product rule from ADR-005 and current project state: public homepage and category pages expose only durable `published` articles with non-null publication timestamps. Draft, review, ready, failed, unpublished, unrelated-category records, and records missing required public fields after requested-locale/default-locale fallback must not appear in public lists.
 
 ## Test Surface
 
@@ -139,7 +139,7 @@ Category smoke expectations:
 - `/en-gb/categories/unknown` follows the project not-found path for an unknown category.
 - `/fr-fr/categories/news` returns not found for an unsupported locale.
 - Invalid slug shapes such as `/en-gb/categories/Bad_Slug` and `/en-gb/categories/model--releases` follow the not-found path.
-- Category pages list only published articles in the requested active category and do not introduce article detail links.
+- Category pages list only published articles in the requested active category, may use default-locale article field fallback when required requested-locale fields are unavailable, and do not introduce article detail links.
 
 M5.2 QA observed a Next dev nuance: unknown or invalid dynamic category slugs may return HTTP `200` while streaming App Router not-found/noindex body markers. This is a residual SEO/release-hardening risk, not a focused M5.2 blocker, until production `next build && next start` status behavior can be validated after the root build issue is repaired.
 
