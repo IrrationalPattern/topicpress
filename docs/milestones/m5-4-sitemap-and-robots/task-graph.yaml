@@ -1,0 +1,276 @@
+milestone:
+  id: "m5-4-sitemap-and-robots"
+  name: "Sitemap And Robots"
+  target_milestone: "M5 Public Site and SEO Rendering"
+  status: "complete"
+  owner: "orchestrator"
+  plan_file: "docs/milestones/m5-4-sitemap-and-robots/plan.md"
+
+task_statuses:
+  allowed:
+    - draft
+    - ready
+    - blocked
+    - assigned
+    - implemented
+    - qa_failed
+    - qa_passed
+    - merged
+    - closed
+
+task_types:
+  allowed:
+    - planning
+    - contract
+    - architecture
+    - design
+    - implementation
+    - frontend
+    - backend
+    - infrastructure
+    - database
+    - migration
+    - qa
+    - documentation
+    - knowledge_consolidation
+    - bugfix
+    - spike
+
+roles:
+  allowed:
+    - architect
+    - frontend_developer
+    - backend_developer
+    - infrastructure_developer
+    - designer
+    - qa_reviewer
+    - knowledge_curator
+    - orchestrator
+
+global_required_context:
+  - "AGENTS.md"
+  - "docs/PROJECT_STATE.md"
+  - "docs/milestones/m5-4-sitemap-and-robots/plan.md"
+  - "docs/milestones/m5-4-sitemap-and-robots/task-graph.yaml"
+
+validation:
+  milestone_commands:
+    - "pnpm --filter @topicpress/web test"
+    - "pnpm --filter @topicpress/web lint"
+    - "pnpm --filter @topicpress/web typecheck"
+    - "pnpm --filter @topicpress/worker test"
+    - "pnpm --filter @topicpress/worker build"
+    - "pnpm --filter @topicpress/config test"
+
+  optional_broadened_commands:
+    - "pnpm db:check"
+    - "pnpm typecheck"
+    - "pnpm lint"
+    - "pnpm test"
+
+  known_caveats:
+    - "Root pnpm build remains affected by root-web-build-hangs and must not be the only completion gate."
+
+parallelization_rules:
+  allow_parallel_execution: false
+  rules:
+    - "Do not run tasks in parallel when one depends on the other."
+    - "Do not run tasks in parallel if one task blocks the other."
+    - "Do not run tasks in parallel if their write scopes overlap."
+    - "Do not run implementation tasks before T001 confirms canonical-origin and robots-environment behavior."
+    - "Do not run frontend route work before T002 exports the public sitemap inventory service unless T001 removes that requirement."
+    - "Do not run QA before implementation handoffs exist."
+    - "Do not mark the milestone complete while high-severity QA findings remain."
+
+conflict_detection:
+  check_before_parallel_dispatch:
+    - "depends_on"
+    - "blocks"
+    - "write_scope.allowed_paths"
+    - "write_scope.forbidden_paths"
+    - "contracts.required_existing"
+    - "contracts.may_update"
+    - "related_specs"
+    - "related_issues"
+
+tasks:
+  - id: "T001"
+    title: "Finalize sitemap and robots contract"
+    type: "contract"
+    target_milestone: "m5-4-sitemap-and-robots"
+    file: "docs/milestones/m5-4-sitemap-and-robots/tasks/T001-finalize-sitemap-robots-contract.yaml"
+    status: "qa_passed"
+    owner: "orchestrator"
+    actor: "architect"
+    assigned_role: "architect"
+    depends_on: []
+    blocks:
+      - "T002"
+      - "T003"
+    parallel_group: "A"
+    estimated_risk: "high"
+    write_scope:
+      mode: "docs-only"
+      allowed_paths:
+        - "docs/milestones/m5-4-sitemap-and-robots/"
+      forbidden_paths:
+        - "apps/"
+        - "packages/"
+        - "supabase/"
+
+  - id: "T002"
+    title: "Add public sitemap URL inventory service"
+    type: "backend"
+    target_milestone: "m5-4-sitemap-and-robots"
+    file: "docs/milestones/m5-4-sitemap-and-robots/tasks/T002-public-sitemap-url-inventory-service.yaml"
+    status: "qa_passed"
+    owner: "implementation"
+    actor: "backend_developer"
+    assigned_role: "backend_developer"
+    depends_on:
+      - "T001"
+    blocks:
+      - "T003"
+      - "T004"
+    parallel_group: "B"
+    estimated_risk: "high"
+    write_scope:
+      mode: "bounded"
+      allowed_paths:
+        - "apps/worker/src/public-sitemap/"
+        - "apps/worker/src/public-sitemap.ts"
+        - "apps/worker/src/public-article-detail/"
+        - "apps/worker/src/index.ts"
+        - "apps/worker/package.json"
+        - "apps/worker/test/public-sitemap.test.mjs"
+        - "apps/worker/test/public-article-detail.test.mjs"
+        - "docs/milestones/m5-4-sitemap-and-robots/handoffs/"
+      forbidden_paths:
+        - "apps/web/"
+        - "packages/db/src/schema/"
+        - "supabase/"
+
+  - id: "T003"
+    title: "Implement sitemap and robots endpoints"
+    type: "frontend"
+    target_milestone: "m5-4-sitemap-and-robots"
+    file: "docs/milestones/m5-4-sitemap-and-robots/tasks/T003-implement-sitemap-and-robots-endpoints.yaml"
+    status: "qa_passed"
+    owner: "implementation"
+    actor: "frontend_developer"
+    assigned_role: "frontend_developer"
+    depends_on:
+      - "T001"
+      - "T002"
+    blocks:
+      - "T004"
+    parallel_group: "C"
+    estimated_risk: "high"
+    write_scope:
+      mode: "bounded"
+      allowed_paths:
+        - "apps/web/src/app/sitemap.ts"
+        - "apps/web/src/app/robots.ts"
+        - "apps/web/src/lib/public-sitemap.ts"
+        - "apps/web/src/lib/public-seo-origin.ts"
+        - "apps/web/package.json"
+        - "apps/web/test/public-sitemap-route.test.ts"
+        - "apps/web/test/public-robots-route.test.ts"
+        - "apps/web/test/public-article-detail-page.test.ts"
+        - "apps/web/test/public-category-route.test.ts"
+        - "docs/milestones/m5-4-sitemap-and-robots/handoffs/"
+      forbidden_paths:
+        - "apps/worker/src/"
+        - "packages/db/src/schema/"
+        - "supabase/"
+      notes:
+        - "The public article detail route test may be updated only to remove or revise obsolete assertions that sitemap.ts and robots.ts are absent; no article detail behavior changes are authorized by this amendment."
+        - "The public category route test may be updated only to remove or revise obsolete assertions that sitemap.ts and robots.ts are absent; no category route behavior changes are authorized by this amendment."
+
+  - id: "T004"
+    title: "QA sitemap and robots routes"
+    type: "qa"
+    target_milestone: "m5-4-sitemap-and-robots"
+    file: "docs/milestones/m5-4-sitemap-and-robots/tasks/T004-qa-sitemap-and-robots-routes.yaml"
+    status: "qa_passed"
+    owner: "qa"
+    actor: "qa_reviewer"
+    assigned_role: "qa_reviewer"
+    depends_on:
+      - "T002"
+      - "T003"
+    blocks:
+      - "T005"
+    parallel_group: "D"
+    estimated_risk: "medium"
+    write_scope:
+      mode: "docs-only"
+      allowed_paths:
+        - "docs/milestones/m5-4-sitemap-and-robots/qa-report.md"
+        - "docs/milestones/m5-4-sitemap-and-robots/handoffs/"
+      forbidden_paths:
+        - "apps/"
+        - "packages/"
+        - "supabase/"
+
+  - id: "T005"
+    title: "Consolidate docs and close milestone"
+    type: "knowledge_consolidation"
+    target_milestone: "m5-4-sitemap-and-robots"
+    file: "docs/milestones/m5-4-sitemap-and-robots/tasks/T005-consolidate-docs-and-closeout.yaml"
+    status: "implemented"
+    owner: "docs"
+    actor: "knowledge_curator"
+    assigned_role: "knowledge_curator"
+    depends_on:
+      - "T004"
+    blocks: []
+    parallel_group: "E"
+    estimated_risk: "low"
+    write_scope:
+      mode: "docs-only"
+      allowed_paths:
+        - "docs/PROJECT_STATE.md"
+        - "docs/frontend/routes.md"
+        - "docs/qa/test-strategy.md"
+        - "docs/milestones/m5-4-sitemap-and-robots/"
+        - "README.md"
+      forbidden_paths:
+        - "apps/"
+        - "packages/"
+        - "supabase/"
+
+execution_order:
+  - phase: "contract"
+    tasks:
+      - "T001"
+  - phase: "backend"
+    tasks:
+      - "T002"
+  - phase: "frontend"
+    tasks:
+      - "T003"
+  - phase: "qa"
+    tasks:
+      - "T004"
+  - phase: "knowledge_consolidation"
+    tasks:
+      - "T005"
+
+qa:
+  qa_report_file: "docs/milestones/m5-4-sitemap-and-robots/qa-report.md"
+  require_qa_after_each_implementation_task: true
+  require_final_milestone_qa: true
+
+handoffs:
+  directory: "docs/milestones/m5-4-sitemap-and-robots/handoffs"
+  required_for_roles:
+    - architect
+    - frontend_developer
+    - backend_developer
+    - qa_reviewer
+    - knowledge_curator
+
+closeout:
+  file: "docs/milestones/m5-4-sitemap-and-robots/closeout.md"
+  required: true

@@ -1,6 +1,6 @@
 # Topicpress Test Strategy
 
-Updated: 2026-05-26
+Updated: 2026-05-27
 
 ## Current Strategy
 
@@ -11,19 +11,19 @@ The current public rendering scope is:
 - `/` redirects to the configured default-locale homepage.
 - `/[locale]` renders the public homepage for supported locales.
 - `/[locale]/categories/[categorySlug]` renders active public category pages for supported locales.
+- `/[locale]/articles/[slug]` renders durable published public article detail pages for supported locales.
+- `/robots.txt` returns configured robots directives with one canonical sitemap pointer.
+- `/sitemap.xml` returns canonical absolute URLs for supported locale homepages, active category URLs, and public article detail URLs.
 - `/internal/editorial/review` remains the internal review surface.
 
-Deferred routes and surfaces remain outside focused M5.1/M5.2 validation unless a later task explicitly changes scope:
+Deferred routes and surfaces remain outside focused M5 validation unless a later task explicitly changes scope:
 
-- `/[locale]/articles/[slug]`
 - `/[locale]/archive`
-- `/robots.txt`
-- `/sitemap.xml`
 - structured article data
 - production canonical rollout
 - release hardening
 
-Public rendering evidence must preserve the core product rule from ADR-005 and current project state: public homepage and category pages expose only durable `published` articles with non-null publication timestamps. Draft, review, ready, failed, unpublished, unrelated-category records, and records missing required public fields after requested-locale/default-locale fallback must not appear in public lists.
+Public rendering and sitemap evidence must preserve the core product rule from ADR-005 and current project state: public surfaces expose only durable `published` articles with non-null publication timestamps. Draft, review, ready, failed, unpublished, unrelated-category records, inactive-category records, invalid or ambiguous slug candidates, and records missing required public fields after requested-locale/default-locale fallback must not appear in public rendering or sitemap output.
 
 ## Test Surface
 
@@ -50,8 +50,8 @@ pnpm --filter @topicpress/config test
 
 Current package coverage:
 
-- `@topicpress/web test` runs locale routing, category route scaffold, homepage components, homepage route composition, category components, and category page metadata/state tests.
-- `@topicpress/worker test` runs a TypeScript build and service/CLI tests for seed sync, feed ingestion, source item persistence, clustering, draft creation, review, publishing, public homepage reads, public category reads, ingestion runs, generation runs, and worker CLIs.
+- `@topicpress/web test` runs locale routing, homepage components/routes, category components/routes/metadata, public article card link assertions, article detail component/metadata route-helper tests, and sitemap/robots helper tests.
+- `@topicpress/worker test` runs a TypeScript build and service/CLI tests for seed sync, feed ingestion, source item persistence, clustering, draft creation, review, publishing, public homepage reads, public category reads, public article detail reads, public sitemap inventory reads, ingestion runs, generation runs, and worker CLIs.
 - `@topicpress/ai test` covers fixture-backed generation, prompt/input validation, structured output validation, and explicit live-provider gating.
 - `@topicpress/config test` covers site configuration contracts.
 - `@topicpress/db test` is currently a placeholder: `No tests configured for @topicpress/db yet.`
@@ -87,6 +87,31 @@ pnpm --filter @topicpress/web typecheck
 pnpm --filter @topicpress/worker test
 pnpm --filter @topicpress/worker build
 ```
+
+For public article detail changes, use:
+
+```powershell
+pnpm --filter @topicpress/web test
+pnpm --filter @topicpress/web lint
+pnpm --filter @topicpress/web typecheck
+pnpm --filter @topicpress/worker test
+pnpm --filter @topicpress/worker build
+```
+
+The package `test` scripts enumerate the focused public article detail tests. Direct test commands remain useful for narrowing failures, but they are no longer required for default M5.3 coverage.
+
+For sitemap and robots changes, use:
+
+```powershell
+pnpm --filter @topicpress/web test
+pnpm --filter @topicpress/web lint
+pnpm --filter @topicpress/web typecheck
+pnpm --filter @topicpress/worker test
+pnpm --filter @topicpress/worker build
+pnpm --filter @topicpress/config test
+```
+
+Sitemap/robots validation must verify native Next metadata route output, canonical placeholder URL behavior, robots environment mapping, published-only inventory filtering, active-category filtering, locale fallback, invalid slug omission, ambiguous slug omission, and absence of `next-sitemap` or sitemap postbuild scope unless a future task explicitly reopens that decision.
 
 For worker, generation, review, publishing, ingestion, or pipeline visibility changes, include:
 
@@ -128,8 +153,8 @@ Homepage smoke expectations:
 - `/uk-ua` renders the Ukrainian public homepage.
 - `/fr-fr` returns not found for an unsupported locale.
 - Homepage output lists only durable published content.
+- Homepage article cards link to `/[locale]/articles/[slug]` when published local data exists.
 - Empty homepage state renders when no published article qualifies.
-- Deferred public surfaces remain unavailable for the slice under test.
 
 Category smoke expectations:
 
@@ -139,15 +164,37 @@ Category smoke expectations:
 - `/en-gb/categories/unknown` follows the project not-found path for an unknown category.
 - `/fr-fr/categories/news` returns not found for an unsupported locale.
 - Invalid slug shapes such as `/en-gb/categories/Bad_Slug` and `/en-gb/categories/model--releases` follow the not-found path.
-- Category pages list only published articles in the requested active category, may use default-locale article field fallback when required requested-locale fields are unavailable, and do not introduce article detail links.
+- Category pages list only published articles in the requested active category, may use default-locale article field fallback when required requested-locale fields are unavailable, and link qualifying article cards to detail pages.
 
-M5.2 QA observed a Next dev nuance: unknown or invalid dynamic category slugs may return HTTP `200` while streaming App Router not-found/noindex body markers. This is a residual SEO/release-hardening risk, not a focused M5.2 blocker, until production `next build && next start` status behavior can be validated after the root build issue is repaired.
+Article detail smoke expectations:
+
+- `/en-gb/articles/<published-slug>` renders the article title and body for a durable published article.
+- `/uk-ua/articles/<published-or-fallback-slug>` renders localized content or default-locale fallback according to the M5.3 contract.
+- `/fr-fr/articles/example` returns not found for an unsupported locale.
+- `/en-gb/articles/Bad_Slug` follows not-found behavior for invalid slug shape.
+- `/en-gb/articles/unknown-slug` follows not-found behavior for an unknown slug.
+- Article detail pages expose article Open Graph metadata and language alternates only from backend-provided `alternateSlugs`.
+- Article body renders as escaped plain text paragraphs.
+- Article detail pages do not introduce source attribution, related articles, ads, comments, archive, sitemap, robots, right-rail modules, or structured article data.
+
+Sitemap and robots smoke expectations:
+
+- `/robots.txt` returns HTTP 200 plain text.
+- Local/dev output is non-indexing and contains `Disallow: /`.
+- `/robots.txt` contains exactly one sitemap pointer rooted at `https://ai-landscape-brief.example` until the production origin placeholder is replaced.
+- `/sitemap.xml` returns HTTP 200 XML with supported locale homepage URLs.
+- `/sitemap.xml` includes active category URLs for supported locales.
+- `/sitemap.xml` includes public article detail URLs only when qualifying local published article data exists.
+- Sitemap URLs are absolute canonical placeholder URLs, not localhost or request-host URLs.
+- Sitemap output omits `/`, internal routes, `/[locale]/archive`, unsupported locales, invalid category slugs, invalid article slugs, unpublished/null-`published_at` articles, inactive-category articles, incomplete fallback records, and ambiguous article slug candidates. Where live DB data cannot prove a negative case, cite focused worker/web tests instead of claiming live smoke coverage.
+
+M5.2/M5.3 QA observed a Next dev nuance: unknown or invalid dynamic category/article slugs may return HTTP `200` while streaming App Router not-found/noindex body markers. This is a residual SEO/release-hardening risk, not a focused M5 blocker, until production `next build && next start` status behavior can be validated after the root build issue is repaired.
 
 The internal route `/internal/editorial/review` should remain reachable during public-site smoke checks unless the task scope explicitly changes internal editorial behavior.
 
 ## Known Root Build Caveat
 
-Obsidian issue `Projects/Topicpress/06-issues/root-web-build-hangs` remains open. Root `pnpm build` hangs in the web build path on this Windows workspace and is classified as an advisory/full-workspace risk for focused M5.1 homepage and M5.2 category-page verification.
+Obsidian issue `Projects/Topicpress/06-issues/root-web-build-hangs` remains open. Root `pnpm build` hangs in the web build path on this Windows workspace and is classified as an advisory/full-workspace risk for focused M5.1 homepage, M5.2 category-page, M5.3 article-detail, and M5.4 sitemap/robots verification.
 
 Current handling:
 
@@ -167,7 +214,7 @@ Record:
 - important output summaries, especially failures
 - local base URL and route list used for browser or HTTP smoke
 - observed HTTP status, redirects, and key streamed body markers where route status is ambiguous
-- local data assumptions, including category slugs used for populated and empty states
+- local data assumptions, including category slugs and article slugs used for populated checks
 - whether Supabase was running, migrated, and seed-synced when database-backed checks were performed
 - residual risks and deferred surfaces
 
@@ -193,11 +240,11 @@ Broaden to web tests, lint, and typecheck when config, taxonomy, locale, metadat
 
 Broaden to AI tests when prompt builders, provider selection, live/fixture gating, structured response validation, source lineage, or draft metadata changes.
 
-Broaden to config tests when site identity, locales, taxonomy, sources, editorial rules, theme tokens, or SEO defaults change.
+Broaden to config tests when site identity, locales, taxonomy, sources, theme tokens, or SEO defaults change.
 
 Broaden to database workflow checks when schema, migrations, seed sync, Drizzle exports, indexes, or persistence constraints change.
 
-Broaden to browser/dev-route smoke when a change affects rendered public pages, route redirects, supported/unsupported locale behavior, empty states, metadata-visible output, category links, or internal editorial navigation.
+Broaden to browser/dev-route smoke when a change affects rendered public pages, route redirects, supported/unsupported locale behavior, empty states, metadata-visible output, category links, article links, article body rendering, or internal editorial navigation.
 
 Broaden beyond focused checks toward root commands and release-style validation when:
 

@@ -5,6 +5,11 @@ import { siteConfig } from "@topicpress/config";
 
 import { getLocalePathSegment, routing, type AppLocale } from "../src/i18n/routing.ts";
 import {
+  getPublicArticlePath,
+  getPublicArticleRouteHref,
+  resolvePublicArticleRouteParams,
+} from "../src/lib/public-article-routing.ts";
+import {
   getPublicCategoryPath,
   isCategorySlugSegment,
   resolvePublicCategoryRouteParams,
@@ -37,6 +42,28 @@ runTest("supported locale category routes derive the configured public path shap
   }
 });
 
+runTest("supported locale article routes derive the configured public path shape", () => {
+  for (const locale of routing.locales) {
+    const articlePath = getPublicArticlePath(locale, "published-ai-brief");
+
+    assert.equal(
+      articlePath,
+      `/${getLocalePathSegment(locale)}/articles/published-ai-brief`,
+    );
+    assert.deepEqual(
+      resolvePublicArticleRouteParams({ locale, slug: "published-ai-brief" }),
+      {
+        locale,
+        slug: "published-ai-brief",
+      },
+    );
+    assert.equal(
+      getPublicArticleRouteHref(locale, { slug: "published-ai-brief" }),
+      articlePath,
+    );
+  }
+});
+
 runTest("visible supported locale path segments resolve for category routes", () => {
   for (const locale of routing.locales) {
     const localeSegment = getLocalePathSegment(locale);
@@ -62,9 +89,12 @@ runTest("unsupported locale and invalid category slug shapes resolve to route no
   assert.equal(resolvePublicCategoryRouteParams({ locale: "en-gb", categorySlug: "Bad_Slug" }), null);
   assert.equal(isCategorySlugSegment("model-releases"), true);
   assert.equal(isCategorySlugSegment("model--releases"), false);
+  assert.equal(resolvePublicArticleRouteParams({ locale: "fr-fr", slug: "published-ai-brief" }), null);
+  assert.equal(resolvePublicArticleRouteParams({ locale: "en-gb", slug: "Bad_Slug" }), null);
+  assert.equal(getPublicArticleRouteHref("en-GB", { slug: "Bad_Slug" }), undefined);
 });
 
-runTest("category route files exist without adding deferred public route surfaces", () => {
+runTest("category and article route files exist without adding other deferred public route surfaces", () => {
   assert.equal(
     existsSync("src/app/(public)/[locale]/categories/[categorySlug]/page.tsx"),
     true,
@@ -73,10 +103,8 @@ runTest("category route files exist without adding deferred public route surface
     existsSync("src/app/(public)/[locale]/categories/[categorySlug]/loading.tsx"),
     true,
   );
-  assert.equal(existsSync("src/app/(public)/[locale]/articles"), false);
+  assert.equal(existsSync("src/app/(public)/[locale]/articles/[slug]/page.tsx"), true);
   assert.equal(existsSync("src/app/(public)/[locale]/archive"), false);
-  assert.equal(existsSync("src/app/robots.ts"), false);
-  assert.equal(existsSync("src/app/sitemap.ts"), false);
 });
 
 runTest("existing root homepage and internal route surfaces remain present", () => {

@@ -1,0 +1,179 @@
+id: "T004"
+title: "QA sitemap and robots routes"
+
+type: "qa"
+
+milestone: "m5-4-sitemap-and-robots"
+target_milestone: "m5-4-sitemap-and-robots"
+status: "qa_passed"
+
+owner: "qa"
+actor: "qa_reviewer"
+assigned_role: "qa_reviewer"
+
+priority: "high"
+risk: "medium"
+
+related_specs:
+  - "docs/PROJECT_STATE.md"
+  - "docs/frontend/routes.md"
+  - "docs/qa/test-strategy.md"
+  - "docs/milestones/m5-4-sitemap-and-robots/plan.md"
+  - "docs/milestones/m5-4-sitemap-and-robots/tasks/T002-public-sitemap-url-inventory-service.yaml"
+  - "docs/milestones/m5-4-sitemap-and-robots/tasks/T003-implement-sitemap-and-robots-endpoints.yaml"
+
+related_issues:
+  - "root-web-build-hangs"
+
+depends_on:
+  - "T002"
+  - "T003"
+
+blocks:
+  - "T005"
+
+parallel_group: "D"
+
+parallelization:
+  can_run_in_parallel: false
+  parallel_safety_notes:
+    - "QA requires implementation handoffs and route output."
+  conflict_check_required: true
+  conflict_check_fields:
+    - "depends_on"
+    - "blocks"
+    - "write_scope.allowed_paths"
+    - "contracts.required_existing"
+    - "contracts.may_update"
+
+input_context:
+  must_read:
+    - "AGENTS.md"
+    - "docs/PROJECT_STATE.md"
+    - "docs/milestones/m5-4-sitemap-and-robots/plan.md"
+    - "docs/milestones/m5-4-sitemap-and-robots/task-graph.yaml"
+    - "docs/milestones/m5-4-sitemap-and-robots/tasks/T002-public-sitemap-url-inventory-service.yaml"
+    - "docs/milestones/m5-4-sitemap-and-robots/tasks/T003-implement-sitemap-and-robots-endpoints.yaml"
+    - "docs/milestones/m5-4-sitemap-and-robots/handoffs/T002-public-sitemap-url-inventory-service-handoff.md"
+    - "docs/milestones/m5-4-sitemap-and-robots/handoffs/T003-implement-sitemap-and-robots-endpoints-handoff.md"
+  should_read:
+    - "docs/frontend/routes.md"
+    - "docs/qa/test-strategy.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/qa-report.md"
+  relevant_docs:
+    - "docs/architecture/boundaries.md"
+  relevant_files:
+    - "apps/web/src/app/sitemap.ts"
+    - "apps/web/src/app/robots.ts"
+    - "apps/web/test/public-sitemap-route.test.ts"
+    - "apps/web/test/public-robots-route.test.ts"
+    - "apps/worker/test/public-sitemap.test.mjs"
+  do_not_read_initially: []
+
+write_scope:
+  mode: "docs-only"
+  allowed_paths:
+    - "docs/milestones/m5-4-sitemap-and-robots/qa-report.md"
+    - "docs/milestones/m5-4-sitemap-and-robots/handoffs/"
+  forbidden_paths:
+    - "apps/"
+    - "packages/"
+    - "supabase/"
+  notes:
+    - "Do not edit production code or tests during QA. Record findings for bounded fix tasks."
+
+scope:
+  include:
+    - "Review implementation handoffs and changed files."
+    - "Run focused validation commands."
+    - "Run route smoke for `/robots.txt` and `/sitemap.xml`."
+    - "Verify sitemap inventory, canonical URLs, robots directives, and negative exclusions."
+    - "Verify `next-sitemap` or another sitemap dependency was not introduced."
+    - "Record findings and final QA result in the milestone QA report."
+  exclude:
+    - "Production code fixes."
+    - "Docs consolidation beyond QA report and QA handoff."
+    - "Root `pnpm build` as a blocking gate while `root-web-build-hangs` remains open."
+
+expected_changes:
+  code:
+    required: false
+    paths: []
+  tests:
+    required: false
+    paths: []
+  docs:
+    required: true
+    paths:
+      - "docs/milestones/m5-4-sitemap-and-robots/qa-report.md"
+      - "docs/milestones/m5-4-sitemap-and-robots/handoffs/T004-qa-sitemap-and-robots-routes-handoff.md"
+  config:
+    required: false
+    paths: []
+
+contracts:
+  required_existing:
+    - "docs/milestones/m5-4-sitemap-and-robots/handoffs/T002-public-sitemap-url-inventory-service-handoff.md"
+    - "docs/milestones/m5-4-sitemap-and-robots/handoffs/T003-implement-sitemap-and-robots-endpoints-handoff.md"
+  may_update:
+    - "docs/milestones/m5-4-sitemap-and-robots/qa-report.md"
+    - "docs/milestones/m5-4-sitemap-and-robots/handoffs/"
+  must_not_update:
+    - "apps/"
+    - "packages/"
+    - "supabase/"
+
+acceptance_criteria:
+  - "QA report records reviewed artifacts, command results, route smoke results, and findings."
+  - "Published-only, non-null `published_at`, active-category, fallback, and ambiguity protections are verified by tests or documented smoke evidence."
+  - "`/robots.txt` and `/sitemap.xml` route outputs are verified locally."
+  - "Robots environment mapping is verified for the T001 VERCEL_ENV/NODE_ENV contract or any gap is recorded as a finding."
+  - "Canonical sitemap URLs use the configured placeholder origin for local QA and never localhost/request-host origins while requireProductionOrigin is true."
+  - "Skipped or limited checks are tied to explicit caveats."
+  - "No high-severity open finding remains before T005."
+  - "QA handoff records task goal, scope, dependencies, acceptance criteria, evidence, and next steps."
+
+validation:
+  commands: []
+  package_commands:
+    - "pnpm --filter @topicpress/web test"
+    - "pnpm --filter @topicpress/web lint"
+    - "pnpm --filter @topicpress/web typecheck"
+    - "pnpm --filter @topicpress/worker test"
+    - "pnpm --filter @topicpress/worker build"
+    - "pnpm --filter @topicpress/config test"
+  manual_checks:
+    - "Start the web app and record the actual base URL."
+    - "Request `/robots.txt` and verify directive plus sitemap pointer."
+    - "Request `/sitemap.xml` and verify canonical absolute URLs, supported locale homepages, active category URLs, and published article URLs."
+    - "Verify sitemap excludes internal, archive, invalid, unpublished, null-published-at, inactive-category, and ambiguous records where fixtures/local data allow."
+    - "Verify package manifests do not add `next-sitemap` or a sitemap postbuild step."
+
+handoff:
+  required: true
+  file: "docs/milestones/m5-4-sitemap-and-robots/handoffs/T004-qa-sitemap-and-robots-routes-handoff.md"
+
+qa:
+  required: false
+  reviewer_role: "qa_reviewer"
+  focus_areas: []
+
+failure_handling:
+  if_blocked:
+    - "Set status to blocked."
+    - "Document missing implementation evidence, unavailable local data, or route smoke blocker."
+  if_qa_fails:
+    - "Set status to qa_failed."
+    - "Record QA finding IDs."
+    - "Create bounded fix task(s) rather than expanding QA scope silently."
+
+completion:
+  required_outputs:
+    - "QA report"
+    - "Validation evidence"
+    - "Handoff file"
+  status_after_agent_finishes: "implemented"
+  status_after_qa_passes: "qa_passed"
+
+notes:
+  - "Root `pnpm build` remains a residual release-hardening risk unless the known caveat has been fixed before QA."

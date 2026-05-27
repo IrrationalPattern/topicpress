@@ -27,7 +27,7 @@ const article = {
   publishedAt: new Date("2026-05-01T10:00:00.000Z"),
 } satisfies HomepageArticle;
 
-runTest("article list renders published article fields without deferred links", () => {
+runTest("article list renders published article fields with article detail links", () => {
   const html = renderToStaticMarkup(
     <ArticleList
       ariaLabel="Latest articles"
@@ -47,7 +47,8 @@ runTest("article list renders published article fields without deferred links", 
   assert.match(html, /Markets/);
   assert.match(html, /public-market-brief/);
   assert.match(html, /2026-05-01T10:00:00.000Z/);
-  assert.doesNotMatch(html, /\shref=/);
+  assert.match(html, /href="\/en-gb\/articles\/public-market-brief"/);
+  assert.doesNotMatch(html, /href="[^"]*\/categories\//);
 });
 
 runTest("article list renders the empty state when no articles are available", () => {

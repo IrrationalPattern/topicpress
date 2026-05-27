@@ -1,0 +1,189 @@
+id: "T004"
+title: "Link public article cards to detail pages"
+
+type: "frontend"
+
+milestone: "m5-3-public-article-detail-pages"
+target_milestone: "m5-3-public-article-detail-pages"
+status: "qa_passed"
+
+owner: "implementation"
+actor: "frontend_developer"
+assigned_role: "frontend_developer"
+
+priority: "high"
+risk: "medium"
+
+related_specs:
+  - "docs/frontend/routes.md"
+  - "docs/qa/test-strategy.md"
+  - "docs/milestones/m5-3-public-article-detail-pages/plan.md"
+
+related_issues: []
+
+depends_on:
+  - "T003"
+
+blocks:
+  - "T005"
+
+parallel_group: "D"
+
+parallelization:
+  can_run_in_parallel: false
+  parallel_safety_notes:
+    - "This task depends on the route helper and may touch tests adjacent to T003."
+  conflict_check_required: true
+  conflict_check_fields:
+    - "depends_on"
+    - "blocks"
+    - "write_scope.allowed_paths"
+    - "contracts.required_existing"
+    - "contracts.may_update"
+
+input_context:
+  must_read:
+    - "AGENTS.md"
+    - "docs/PROJECT_STATE.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/plan.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/task-graph.yaml"
+    - "docs/milestones/m5-3-public-article-detail-pages/handoffs/T003-implement-article-detail-route-and-page-handoff.md"
+  should_read:
+    - "docs/frontend/routes.md"
+    - "apps/web/src/components/public/article-card.tsx"
+    - "apps/web/src/components/public/article-list.tsx"
+    - "apps/web/src/components/public/homepage-content.tsx"
+    - "apps/web/src/components/public/category-listing-content.tsx"
+  relevant_docs:
+    - "docs/qa/test-strategy.md"
+  relevant_files:
+    - "apps/web/test/public-homepage-components.test.tsx"
+    - "apps/web/test/public-homepage-route.test.tsx"
+    - "apps/web/test/public-category-components.test.tsx"
+    - "apps/web/test/public-category-route.test.ts"
+    - "apps/web/test/public-category-page.test.ts"
+  do_not_read_initially: []
+
+write_scope:
+  mode: "bounded"
+  allowed_paths:
+    - "apps/web/src/components/public/article-card.tsx"
+    - "apps/web/src/components/public/article-list.tsx"
+    - "apps/web/src/components/public/homepage-content.tsx"
+    - "apps/web/src/components/public/category-listing-content.tsx"
+    - "apps/web/src/lib/public-article-routing.ts"
+    - "apps/web/test/public-homepage-components.test.tsx"
+    - "apps/web/test/public-homepage-route.test.tsx"
+    - "apps/web/test/public-category-components.test.tsx"
+    - "apps/web/test/public-category-route.test.ts"
+    - "apps/web/test/public-category-page.test.ts"
+    - "docs/milestones/m5-3-public-article-detail-pages/handoffs/"
+  forbidden_paths:
+    - "apps/worker/src/"
+    - "packages/db/src/schema/"
+    - "supabase/"
+  notes:
+    - "Do not change backend DTOs in this task; return to T002/Architect if link data is missing."
+
+scope:
+  include:
+    - "Update existing public article card/list surfaces to link to `/[locale]/articles/[slug]`."
+    - "Use route helpers rather than string-building paths in multiple components."
+    - "Update tests that previously asserted article links were absent."
+    - "Ensure homepage and category pages preserve existing category links and localized routing."
+  exclude:
+    - "Article detail page implementation."
+    - "Backend service changes."
+    - "Pagination, archive, related content, or sitemap."
+
+expected_changes:
+  code:
+    required: true
+    paths:
+      - "apps/web/src/components/public/article-card.tsx"
+      - "apps/web/src/components/public/article-list.tsx"
+      - "apps/web/src/components/public/homepage-content.tsx"
+      - "apps/web/src/components/public/category-listing-content.tsx"
+      - "apps/web/src/lib/public-article-routing.ts"
+  tests:
+    required: true
+    paths:
+      - "apps/web/test/public-homepage-components.test.tsx"
+      - "apps/web/test/public-homepage-route.test.tsx"
+      - "apps/web/test/public-category-components.test.tsx"
+      - "apps/web/test/public-category-route.test.ts"
+      - "apps/web/test/public-category-page.test.ts"
+  docs:
+    required: true
+    paths:
+      - "docs/milestones/m5-3-public-article-detail-pages/handoffs/T004-link-public-article-cards-to-detail-pages-handoff.md"
+  config:
+    required: false
+    paths: []
+
+contracts:
+  required_existing:
+    - "docs/milestones/m5-3-public-article-detail-pages/handoffs/T003-implement-article-detail-route-and-page-handoff.md"
+  may_update:
+    - "apps/web/src/components/public/"
+    - "apps/web/src/lib/public-article-routing.ts"
+    - "apps/web/test/public-homepage-components.test.tsx"
+    - "apps/web/test/public-homepage-route.test.tsx"
+    - "apps/web/test/public-category-components.test.tsx"
+    - "apps/web/test/public-category-route.test.ts"
+    - "apps/web/test/public-category-page.test.ts"
+  must_not_update:
+    - "apps/worker/src/"
+    - "packages/db/src/schema/"
+    - "supabase/"
+
+acceptance_criteria:
+  - "Homepage article cards link to locale-aware article detail URLs when articles are present."
+  - "Category listing article cards link to locale-aware article detail URLs when articles are present."
+  - "Existing category links remain correct."
+  - "Tests no longer assert `/articles/` links are absent for implemented public list surfaces."
+  - "No unrelated navigation surfaces are introduced."
+
+validation:
+  commands: []
+  package_commands:
+    - "pnpm --filter @topicpress/web test"
+    - "pnpm --filter @topicpress/web lint"
+    - "pnpm --filter @topicpress/web typecheck"
+  manual_checks:
+    - "Confirm `apps/web/test/public-category-route.test.ts` no longer asserts the implemented article route directory is absent."
+    - "Smoke homepage/category pages in dev and verify article cards navigate to the article detail route when local data exists."
+
+handoff:
+  required: true
+  file: "docs/milestones/m5-3-public-article-detail-pages/handoffs/T004-link-public-article-cards-to-detail-pages-handoff.md"
+
+qa:
+  required: true
+  reviewer_role: "qa_reviewer"
+  focus_areas:
+    - "Homepage links."
+    - "Category links."
+    - "Locale-aware route helper usage."
+    - "Regression against category routing."
+
+failure_handling:
+  if_blocked:
+    - "Set status to blocked."
+    - "Document whether missing link data or route helper caused the blocker."
+  if_qa_fails:
+    - "Set status to qa_failed."
+    - "Record QA finding IDs."
+    - "Create a bounded frontend fix task."
+
+completion:
+  required_outputs:
+    - "Code changes"
+    - "Tests"
+    - "Validation evidence"
+    - "Handoff file"
+  status_after_agent_finishes: "implemented"
+  status_after_qa_passes: "qa_passed"
+
+notes:
+  - "Use `displaySlug` only as visible text if needed; URLs should use the resolved public route slug."

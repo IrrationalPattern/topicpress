@@ -1,6 +1,6 @@
 # Project State
 
-Updated: 2026-05-26
+Updated: 2026-05-27
 
 Source: imported from Obsidian MCP project notes under `Projects/Topicpress/`.
 
@@ -17,19 +17,21 @@ Completed foundation:
 - M4 Review-Gated Publishing is complete, including the live OpenAI review-draft extension. Manual review remains required before publication.
 - M5.1 Public Homepage is complete after QA-511 on 2026-05-04.
 - M5.2 Category Pages is complete after QA-527 on 2026-05-05.
+- M5.3 Public Article Detail Pages is complete after QA on 2026-05-27, including the QA-M5.3-001 metadata title suffix fix.
+- M5.4 Sitemap and Robots is complete after QA on 2026-05-27.
 
 ## Current milestone
 
 M5 Public Site and SEO Rendering.
 
-Latest completed slice: M5.2 Category Pages Implementation.
+Latest completed slice: M5.4 Sitemap and Robots.
 
-Recommended next slice from the latest QA handoff: article detail pages if the product priority is readable article permalinks. Sitemap and robots can proceed as a separate SEO surface after article/category URL policy is confirmed.
+Recommended next slice from the latest milestone closeout: release hardening and production-readiness work, especially replacing the `.example` canonical placeholder with the real production origin and repairing `root-web-build-hangs`, before production indexability is enabled. Product may still prioritize archive or structured article data as separate M5 SEO slices if launch readiness is not the immediate goal.
 
 ## Current architecture summary
 
-- Frontend: `apps/web` is a Next.js App Router app using locale-aware public routing, `next-intl`, shadcn/ui, semantic CSS variables, and site-config-driven theme tokens. Implemented public routes are `/`, `/[locale]`, and `/[locale]/categories/[categorySlug]`. `/` redirects to the configured default-locale homepage. Internal editorial review lives under `/internal/editorial/review` and `/internal/editorial/review/[articleId]`.
-- Backend: `apps/worker` owns feed ingestion, source-item persistence, clustering, AI draft generation, review/publish services, provider selection for fixture vs live OpenAI draft generation, and pipeline visibility. Long-running work stays out of page requests.
+- Frontend: `apps/web` is a Next.js App Router app using locale-aware public routing, `next-intl`, shadcn/ui, semantic CSS variables, and site-config-driven theme tokens. Implemented public routes are `/`, `/[locale]`, `/[locale]/categories/[categorySlug]`, `/[locale]/articles/[slug]`, `/robots.txt`, and `/sitemap.xml`. `/` redirects to the configured default-locale homepage. Internal editorial review lives under `/internal/editorial/review` and `/internal/editorial/review/[articleId]`.
+- Backend: `apps/worker` owns feed ingestion, source-item persistence, clustering, AI draft generation, review/publish services, provider selection for fixture vs live OpenAI draft generation, pipeline visibility, and narrow public read services including the path-level sitemap inventory. Long-running work stays out of page requests.
 - Database: Supabase Postgres is the system of record. `packages/db` owns the Drizzle schema, migrations, and typed schema exports. The MVP schema centers on `sources`, `categories`, `source_items`, `story_clusters`, `story_cluster_items`, `articles`, `article_localizations`, `article_sources`, and `pipeline_runs`.
 - Config: `packages/config` owns site identity, domain, locales, taxonomy, sources, editorial rules, theme tokens, SEO defaults, and seed helpers. Sources and categories are config-owned and sync to runtime rows by stable config keys.
 - AI: `packages/ai` owns prompt builders, structured output validation, and provider behavior. Fixture-backed generation remains the deterministic default for local tests and CI; live OpenAI generation is explicit and secret-gated.
@@ -47,15 +49,19 @@ Recommended next slice from the latest QA handoff: article detail pages if the p
 - Vector search, embeddings, arbitrary scraping, comments/community features, large-team CMS workflows, and multi-tenant production database architecture are out of MVP scope.
 - Public rendering must expose only durable `published` articles with non-null `published_at`.
 - Public homepage and category listings may fall back from requested-locale article localization fields to the configured default locale, but only when required public fields such as slug, title, and excerpt are usable after fallback.
-- M5.1 and M5.2 intentionally deferred article detail pages, archive, sitemap, robots, structured article data, full release hardening, and production canonical rollout.
+- Public article detail pages may fall back from requested-locale article localization fields to the configured default locale, but only when public slug, title, excerpt, and body are usable after fallback. Detail reads require published status, non-null `published_at`, an active category row, valid slug shape, and backend-provided `alternateSlugs` for supported locale alternates.
+- Public article body rendering treats persisted `body` as escaped plain text paragraphs. M5.3 did not introduce source attribution, related articles, ads, comments, right-rail modules, archive, structured article data, or production canonical rollout.
+- M5.4 implements `/robots.txt` and `/sitemap.xml` through native Next.js metadata routes. It uses the committed canonical placeholder origin `https://ai-landscape-brief.example` for local/test/staging QA, not localhost or request hosts. Production release/indexability remains blocked until that placeholder is replaced with the real production origin in committed config.
+- Public sitemap inventory returns path-level DTOs only. Canonical URL construction remains owned by web/config, and sitemap entries require active categories plus public article eligibility matching the M5.3 detail-route slug/fallback protections.
 
 ## Active risks
 
-- `root-web-build-hangs`: root `pnpm build` hangs in the web build path. Focused M5.1/M5.2 checks passed, but this must be repaired before release hardening or CI build gating.
+- `root-web-build-hangs`: root `pnpm build` hangs in the web build path. Focused M5.1/M5.2/M5.3/M5.4 checks passed, but this must be repaired before release hardening or CI build gating.
+- Production release/indexability remains blocked until `siteConfig.identity.domains.productionOriginPlaceholder` is replaced with the real production origin in committed config. Local M5.4 QA intentionally observed `https://ai-landscape-brief.example` sitemap URLs with non-indexing local robots output.
 - `supabase-db-diff-local-windows-shadow-db`: Windows Docker `db:diff:local` shadow database failure. Non-blocking while reset/migrate/generate/check paths remain verified.
 - Invalid or unknown dynamic category slugs may return HTTP 200 in Next dev while rendering App Router not-found/noindex body markers. Production status should be rechecked once root build/release validation is repaired.
 - Live OpenAI generation carries cost, availability, latency, and content-quality risk. It is opt-in, secret-gated, and remains review-draft-only.
-- Public article detail pages, sitemap, robots, archive, structured data, production canonical behavior, and release hardening are not implemented yet.
+- Archive, structured article data, production canonical rollout, and release hardening are not implemented yet.
 - Several package test suites started as placeholders; coverage is focused around implemented contracts rather than broad product behavior.
 
 ## Current contracts
@@ -77,23 +83,25 @@ Recommended next slice from the latest QA handoff: article detail pages if the p
   - `/` redirects to the configured default-locale homepage.
   - `/[locale]` renders the public homepage for supported locales.
   - `/[locale]/categories/[categorySlug]` renders active category listing pages for supported locales.
+  - `/[locale]/articles/[slug]` renders durable published article detail pages for supported locales.
+  - `/robots.txt` returns environment-mapped robots directives with one canonical sitemap pointer.
+  - `/sitemap.xml` returns absolute canonical URLs for supported locale homepages, active categories, and public article details.
   - `/internal/editorial/review` renders the internal review list.
   - `/internal/editorial/review/[articleId]` renders the internal review detail/actions surface.
 - Deferred frontend routes:
-  - `/[locale]/articles/[slug]`
   - `/[locale]/archive`
-  - `/robots.txt`
-  - `/sitemap.xml`
+  - structured article data
 - Key local validation commands:
   - `pnpm --filter @topicpress/web test`
   - `pnpm --filter @topicpress/web lint`
   - `pnpm --filter @topicpress/web typecheck`
   - `pnpm --filter @topicpress/worker test`
   - `pnpm --filter @topicpress/worker build`
+  - `pnpm --filter @topicpress/config test`
 
 ## Next planned milestones
 
-1. M5 article detail pages, recommended next if readable article permalinks are the priority.
-2. M5 sitemap and robots, recommended as a separate SEO slice after article/category URL policy is confirmed.
-3. M5 archive or pagination only if article volume justifies it.
-4. M6 End-to-End QA, Release, and Operations after public rendering slices are complete.
+1. Release hardening, including `root-web-build-hangs`, production-origin replacement, and production status validation, if operational readiness is prioritized.
+2. M5 archive or pagination only if article volume justifies it.
+3. Structured article data as a separate SEO slice if product prioritizes richer search metadata before release hardening.
+4. M6 End-to-End QA, Release, and Operations after public rendering and release-hardening slices are complete.

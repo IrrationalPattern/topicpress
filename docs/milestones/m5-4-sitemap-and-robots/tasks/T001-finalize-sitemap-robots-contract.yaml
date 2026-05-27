@@ -1,0 +1,220 @@
+id: "T001"
+title: "Finalize sitemap and robots contract"
+
+type: "contract"
+
+milestone: "m5-4-sitemap-and-robots"
+target_milestone: "m5-4-sitemap-and-robots"
+status: "qa_passed"
+
+owner: "orchestrator"
+actor: "architect"
+assigned_role: "architect"
+
+priority: "high"
+risk: "high"
+
+related_specs:
+  - "docs/PROJECT_STATE.md"
+  - "docs/architecture/overview.md"
+  - "docs/architecture/boundaries.md"
+  - "docs/frontend/routes.md"
+  - "docs/qa/test-strategy.md"
+  - "docs/milestones/m5-4-sitemap-and-robots/plan.md"
+  - "docs/milestones/m5-3-public-article-detail-pages/closeout.md"
+
+related_issues:
+  - "root-web-build-hangs"
+
+depends_on: []
+
+blocks:
+  - "T002"
+  - "T003"
+
+parallel_group: "A"
+
+parallelization:
+  can_run_in_parallel: false
+  parallel_safety_notes:
+    - "This task resolves contracts consumed by backend and frontend implementation."
+  conflict_check_required: true
+  conflict_check_fields:
+    - "depends_on"
+    - "blocks"
+    - "write_scope.allowed_paths"
+    - "contracts.required_existing"
+    - "contracts.may_update"
+
+input_context:
+  must_read:
+    - "AGENTS.md"
+    - "docs/PROJECT_STATE.md"
+    - "docs/milestones/m5-4-sitemap-and-robots/plan.md"
+    - "docs/milestones/m5-4-sitemap-and-robots/task-graph.yaml"
+  should_read:
+    - "docs/product/vision.md"
+    - "docs/architecture/overview.md"
+    - "docs/architecture/boundaries.md"
+    - "docs/architecture/adr/ADR-001-monorepo-split-runtime.md"
+    - "docs/architecture/adr/ADR-006-database-backed-worker-execution.md"
+    - "docs/frontend/routes.md"
+    - "docs/qa/test-strategy.md"
+    - "packages/config/src/index.ts"
+    - "apps/web/src/lib/public-article-routing.ts"
+    - "apps/worker/src/public-article-detail/"
+  relevant_docs:
+    - "docs/milestones/m5-3-public-article-detail-pages/qa-report.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/closeout.md"
+  relevant_files:
+    - "packages/config/src/index.ts"
+    - "apps/web/src/i18n/routing.ts"
+    - "apps/web/src/lib/public-article-routing.ts"
+    - "apps/worker/src/public-article-detail/service.ts"
+  do_not_read_initially: []
+
+write_scope:
+  mode: "docs-only"
+  allowed_paths:
+    - "docs/milestones/m5-4-sitemap-and-robots/plan.md"
+    - "docs/milestones/m5-4-sitemap-and-robots/task-graph.yaml"
+    - "docs/milestones/m5-4-sitemap-and-robots/tasks/"
+    - "docs/milestones/m5-4-sitemap-and-robots/handoffs/"
+  forbidden_paths:
+    - "apps/"
+    - "packages/"
+    - "supabase/"
+  notes:
+    - "Do not edit production code in this task."
+
+scope:
+  include:
+    - "Resolve the canonical origin source of truth for sitemap absolute URLs."
+    - "Resolve how robots directives map to local, staging/preview, and production environments."
+    - "Confirm sitemap URL inventory: locale homepages, active category URLs, and public article detail URLs."
+    - "Confirm article URL eligibility and ambiguity handling against the M5.3 article detail route contract."
+    - "Confirm whether T002 must extract shared worker slug eligibility helpers or may mirror current article detail logic."
+    - "Update milestone docs if the contract changes."
+  exclude:
+    - "Production code implementation."
+    - "Schema, migration, seed, or deployment config changes."
+    - "Archive, structured data, pagination, release hardening, source attribution, related content, ads, or right rail."
+
+expected_changes:
+  code:
+    required: false
+    paths: []
+  tests:
+    required: false
+    paths: []
+  docs:
+    required: true
+    paths:
+      - "docs/milestones/m5-4-sitemap-and-robots/plan.md"
+      - "docs/milestones/m5-4-sitemap-and-robots/task-graph.yaml"
+      - "docs/milestones/m5-4-sitemap-and-robots/tasks/"
+      - "docs/milestones/m5-4-sitemap-and-robots/handoffs/T001-finalize-sitemap-robots-contract-handoff.md"
+  config:
+    required: false
+    paths: []
+
+contracts:
+  required_existing:
+    - "docs/milestones/m5-4-sitemap-and-robots/plan.md"
+  may_update:
+    - "docs/milestones/m5-4-sitemap-and-robots/plan.md"
+    - "docs/milestones/m5-4-sitemap-and-robots/task-graph.yaml"
+    - "docs/milestones/m5-4-sitemap-and-robots/tasks/"
+  must_not_update:
+    - "apps/"
+    - "packages/"
+    - "supabase/"
+
+acceptance_criteria:
+  - "Canonical origin behavior is explicit, including whether the current production placeholder may be used for local QA."
+  - "Robots environment mapping is explicit or the milestone is blocked with a clear question."
+  - "Sitemap route families and exclusions are explicit."
+  - "Article URL eligibility, fallback, invalid-slug, and ambiguity behavior are explicit."
+  - "Open questions are resolved or converted into blockers before T002/T003 start."
+  - "No production code, package code, or database files are edited."
+  - "A handoff records task goal, scope, dependencies, acceptance criteria, decisions, and any changes made."
+
+resolved_contract:
+  canonical_origin:
+    source_of_truth: "siteConfig.identity.domains.productionOriginPlaceholder"
+    local_qa_placeholder_allowed: true
+    notes:
+      - "Local, test, and staging QA may emit https://ai-landscape-brief.example because non-production robots output is noindex,nofollow."
+      - "Do not use localOrigin, NEXT_PUBLIC_SITE_URL, request hosts, or localhost as sitemap/robots canonical origins while requireProductionOrigin is true."
+      - "Production launch/indexability remains blocked until the real production origin replaces the placeholder in committed config."
+  robots_environment_mapping:
+    source_order:
+      - "VERCEL_ENV"
+      - "NODE_ENV"
+    mapping:
+      - "VERCEL_ENV=production -> production"
+      - "VERCEL_ENV=preview -> staging"
+      - "VERCEL_ENV=development -> local"
+      - "no VERCEL_ENV and NODE_ENV=development/test/unset -> local"
+      - "no VERCEL_ENV and NODE_ENV=production -> staging fail-closed"
+      - "unknown VERCEL_ENV -> staging fail-closed"
+    notes:
+      - "Do not introduce a new deployment environment variable in M5.4."
+  sitemap_route_families:
+    include:
+      - "supported locale homepages"
+      - "active configured categories with active synced database rows for each supported locale"
+      - "public article detail URLs for supported locales"
+    exclude:
+      - "redirect-only root /"
+      - "internal editorial routes"
+      - "archive"
+      - "structured data endpoints"
+      - "unimplemented route families"
+      - "draft/review/ready/failed/unpublished/null-published-at/inactive-category/incomplete/invalid/ambiguous article URLs"
+  article_url_eligibility:
+    decision: "Extract or reuse worker-only M5.3 public article detail eligibility helpers; do not independently mirror slug/fallback logic unless extraction is blocked and documented."
+    notes:
+      - "A sitemap article URL is eligible only if its candidate slug resolves back to the same public article under the M5.3 detail route contract."
+      - "Invalid, incomplete, ambiguous, or different-article slug candidates must be omitted."
+  implementation_library:
+    decision: "Use native Next.js App Router metadata routes, not next-sitemap."
+    rationale: "next-sitemap does not reduce the main M5.4 risks enough to justify a dependency because origin policy, robots mapping, DB-backed inventory, and M5.3 slug eligibility remain project-owned."
+
+validation:
+  commands: []
+  package_commands: []
+  manual_checks:
+    - "Review milestone plan and task graph for consistency after contract edits."
+
+handoff:
+  required: true
+  file: "docs/milestones/m5-4-sitemap-and-robots/handoffs/T001-finalize-sitemap-robots-contract-handoff.md"
+
+qa:
+  required: true
+  reviewer_role: "qa_reviewer"
+  focus_areas:
+    - "Verify implementation tasks have enough contract detail to proceed."
+    - "Verify scope boundaries remain docs-only."
+    - "Verify blockers are explicit."
+
+failure_handling:
+  if_blocked:
+    - "Set status to blocked."
+    - "Document unresolved canonical-origin, robots-environment, or URL source-of-truth question."
+  if_qa_fails:
+    - "Set status to qa_failed."
+    - "Record QA finding IDs."
+    - "Fix the contract before implementation starts."
+
+completion:
+  required_outputs:
+    - "Contract update or documented no-op"
+    - "Manual validation evidence"
+    - "Handoff file"
+  status_after_agent_finishes: "implemented"
+  status_after_qa_passes: "qa_passed"
+
+notes:
+  - "Implementation agents must stop and ask if sitemap URL source-of-truth or canonical host behavior remains unclear."

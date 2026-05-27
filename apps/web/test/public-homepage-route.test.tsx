@@ -25,7 +25,7 @@ const article = {
   publishedAt: new Date("2026-05-03T09:30:00.000Z"),
 } satisfies HomepageArticle;
 
-runTest("homepage composition renders populated published state with category links only", () => {
+runTest("homepage composition renders populated published state with category and article links", () => {
   const html = renderToStaticMarkup(
     <HomepageContent
       articleListAriaLabel="Published homepage articles"
@@ -45,9 +45,9 @@ runTest("homepage composition renders populated published state with category li
   assert.match(html, /Published AI brief/);
   assert.match(html, /published-ai-brief/);
   assert.match(html, /href="\/en-gb\/categories\/news"/);
+  assert.match(html, /href="\/en-gb\/articles\/published-ai-brief"/);
   assert.doesNotMatch(html, />AI briefing</);
   assert.doesNotMatch(html, /1 published article/);
-  assert.doesNotMatch(html, /href="[^"]*\/articles\//);
 });
 
 runTest("homepage composition preserves explicit empty state", () => {

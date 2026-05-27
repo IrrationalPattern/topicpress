@@ -1,0 +1,166 @@
+id: "T006"
+title: "Consolidate docs and milestone handoff"
+
+type: "knowledge_consolidation"
+
+milestone: "m5-3-public-article-detail-pages"
+target_milestone: "m5-3-public-article-detail-pages"
+status: "implemented"
+
+owner: "docs"
+actor: "knowledge_curator"
+assigned_role: "knowledge_curator"
+
+priority: "medium"
+risk: "low"
+
+related_specs:
+  - "docs/PROJECT_STATE.md"
+  - "docs/frontend/routes.md"
+  - "docs/qa/test-strategy.md"
+  - "docs/milestones/m5-3-public-article-detail-pages/qa-report.md"
+
+related_issues:
+  - "root-web-build-hangs"
+
+depends_on:
+  - "T005"
+
+blocks: []
+
+parallel_group: "F"
+
+parallelization:
+  can_run_in_parallel: false
+  parallel_safety_notes:
+    - "This task depends on final QA outcome and implementation evidence."
+  conflict_check_required: true
+  conflict_check_fields:
+    - "depends_on"
+    - "blocks"
+    - "write_scope.allowed_paths"
+    - "contracts.required_existing"
+    - "contracts.may_update"
+
+input_context:
+  must_read:
+    - "AGENTS.md"
+    - "docs/PROJECT_STATE.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/plan.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/task-graph.yaml"
+    - "docs/milestones/m5-3-public-article-detail-pages/qa-report.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/handoffs/T005-qa-article-detail-route-handoff.md"
+  should_read:
+    - "docs/frontend/routes.md"
+    - "docs/qa/test-strategy.md"
+    - "README.md"
+  relevant_docs:
+    - "docs/architecture/overview.md"
+    - "docs/architecture/boundaries.md"
+  relevant_files: []
+  do_not_read_initially: []
+
+write_scope:
+  mode: "docs-only"
+  allowed_paths:
+    - "docs/PROJECT_STATE.md"
+    - "docs/frontend/routes.md"
+    - "docs/qa/test-strategy.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/"
+    - "README.md"
+  forbidden_paths:
+    - "apps/"
+    - "packages/"
+    - "supabase/"
+  notes:
+    - "Only update README if implementation changed documented local route smoke or verification steps there."
+
+scope:
+  include:
+    - "Update canonical docs to reflect the delivered route if QA passes."
+    - "Record residual risks and known caveats."
+    - "Write milestone closeout with final status and next milestone recommendation."
+    - "Write a knowledge-consolidation handoff."
+  exclude:
+    - "Production code fixes."
+    - "Schema, infrastructure, or config changes."
+    - "Marking milestone complete if QA did not pass or high-severity findings remain unresolved."
+
+expected_changes:
+  code:
+    required: false
+    paths: []
+  tests:
+    required: false
+    paths: []
+  docs:
+    required: true
+    paths:
+      - "docs/PROJECT_STATE.md"
+      - "docs/frontend/routes.md"
+      - "docs/qa/test-strategy.md"
+      - "docs/milestones/m5-3-public-article-detail-pages/closeout.md"
+      - "docs/milestones/m5-3-public-article-detail-pages/handoffs/T006-consolidate-docs-and-handoff.md"
+  config:
+    required: false
+    paths: []
+
+contracts:
+  required_existing:
+    - "docs/milestones/m5-3-public-article-detail-pages/qa-report.md"
+  may_update:
+    - "docs/PROJECT_STATE.md"
+    - "docs/frontend/routes.md"
+    - "docs/qa/test-strategy.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/"
+    - "README.md"
+  must_not_update:
+    - "apps/"
+    - "packages/"
+    - "supabase/"
+
+acceptance_criteria:
+  - "`docs/PROJECT_STATE.md` reflects whether article detail pages are complete, partial, or blocked."
+  - "`docs/frontend/routes.md` records the implemented article detail route and updated deferred route list if QA passes."
+  - "`docs/qa/test-strategy.md` records article detail validation expectations if QA passes."
+  - "Milestone closeout records final status, validation summary, residual risks, and next milestone recommendation."
+  - "No code, package, schema, migration, or infrastructure files are edited."
+
+validation:
+  commands: []
+  package_commands: []
+  manual_checks:
+    - "Check all docs changed by this task for consistency with QA report and project state."
+
+handoff:
+  required: true
+  file: "docs/milestones/m5-3-public-article-detail-pages/handoffs/T006-consolidate-docs-and-handoff.md"
+
+qa:
+  required: true
+  reviewer_role: "qa_reviewer"
+  focus_areas:
+    - "Docs consistency."
+    - "Project state accuracy."
+    - "Residual risk tracking."
+    - "Closeout completeness."
+
+failure_handling:
+  if_blocked:
+    - "Set status to blocked."
+    - "Document missing QA evidence or unresolved findings."
+  if_qa_fails:
+    - "Set status to qa_failed."
+    - "Record QA finding IDs."
+    - "Fix docs inconsistencies before closeout."
+
+completion:
+  required_outputs:
+    - "Docs updates"
+    - "Milestone closeout"
+    - "Handoff file"
+  status_after_agent_finishes: "implemented"
+  status_after_qa_passes: "qa_passed"
+
+notes:
+  - "Recommended next milestone after successful completion is sitemap/robots as a separate SEO slice, unless release hardening becomes the higher priority."

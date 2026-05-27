@@ -54,7 +54,7 @@ runTest("category listing renders populated category state with active category 
   assert.match(html, /1 published article in this category/);
   assert.match(html, /Published AI brief/);
   assert.match(html, /href="\/en-gb\/categories\/news"/);
-  assert.doesNotMatch(html, /href="[^"]*\/articles\//);
+  assert.match(html, /href="\/en-gb\/articles\/published-ai-brief"/);
 });
 
 runTest("category listing renders explicit empty state", () => {

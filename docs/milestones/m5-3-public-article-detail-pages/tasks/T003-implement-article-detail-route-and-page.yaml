@@ -1,0 +1,194 @@
+id: "T003"
+title: "Implement article detail route and page"
+
+type: "frontend"
+
+milestone: "m5-3-public-article-detail-pages"
+target_milestone: "m5-3-public-article-detail-pages"
+status: "qa_passed"
+
+owner: "implementation"
+actor: "frontend_developer"
+assigned_role: "frontend_developer"
+
+priority: "high"
+risk: "high"
+
+related_specs:
+  - "docs/PROJECT_STATE.md"
+  - "docs/frontend/routes.md"
+  - "docs/qa/test-strategy.md"
+  - "docs/milestones/m5-3-public-article-detail-pages/plan.md"
+
+related_issues:
+  - "root-web-build-hangs"
+
+depends_on:
+  - "T001"
+  - "T002"
+
+blocks:
+  - "T004"
+  - "T005"
+
+parallel_group: "C"
+
+parallelization:
+  can_run_in_parallel: false
+  parallel_safety_notes:
+    - "This task consumes the backend service and creates route helpers used by T004."
+  conflict_check_required: true
+  conflict_check_fields:
+    - "depends_on"
+    - "blocks"
+    - "write_scope.allowed_paths"
+    - "contracts.required_existing"
+    - "contracts.may_update"
+
+input_context:
+  must_read:
+    - "AGENTS.md"
+    - "docs/PROJECT_STATE.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/plan.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/task-graph.yaml"
+    - "docs/milestones/m5-3-public-article-detail-pages/handoffs/T001-finalize-article-detail-contract-handoff.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/handoffs/T002-add-public-article-detail-read-service-handoff.md"
+  should_read:
+    - "docs/frontend/routes.md"
+    - "docs/qa/test-strategy.md"
+    - "apps/web/src/app/(public)/[locale]/categories/[categorySlug]/page.tsx"
+    - "apps/web/src/lib/public-category-listing.ts"
+    - "apps/web/src/lib/public-category-page.ts"
+    - "apps/web/src/components/public/category-listing-content.tsx"
+  relevant_docs:
+    - "docs/architecture/boundaries.md"
+  relevant_files:
+    - "apps/web/src/app/(public)/[locale]/page.tsx"
+    - "apps/web/src/app/(public)/[locale]/categories/[categorySlug]/page.tsx"
+    - "apps/web/src/app/(public)/[locale]/categories/[categorySlug]/not-found.tsx"
+    - "apps/web/src/lib/locale-routing.ts"
+    - "apps/web/src/lib/public-category-routing.ts"
+    - "apps/web/test/public-category-page.test.ts"
+  do_not_read_initially: []
+
+write_scope:
+  mode: "bounded"
+  allowed_paths:
+    - "apps/web/src/app/(public)/[locale]/articles/[slug]/"
+    - "apps/web/src/lib/public-article-detail.ts"
+    - "apps/web/src/lib/public-article-routing.ts"
+    - "apps/web/src/components/public/article-detail-content.tsx"
+    - "apps/web/test/public-article-detail-page.test.ts"
+    - "apps/web/test/public-article-detail-components.test.tsx"
+    - "docs/milestones/m5-3-public-article-detail-pages/handoffs/"
+  forbidden_paths:
+    - "apps/worker/src/"
+    - "packages/db/src/schema/"
+    - "supabase/"
+  notes:
+    - "Do not update article cards/lists in this task unless required to compile; T004 owns link rollout."
+
+scope:
+  include:
+    - "Add the `/[locale]/articles/[slug]` App Router route."
+    - "Add route-local loading, error, and not-found files consistent with existing public dynamic routes."
+    - "Add a server-only web read wrapper that opens and closes a request-scoped database client."
+    - "Render article title, optional subtitle, excerpt, body, category link, publication date, and optional hero image."
+    - "Keep the right rail empty or absent; do not introduce fake modules."
+    - "Implement article metadata according to the milestone contract."
+    - "Build language alternates only from backend-provided `alternateSlugs`."
+    - "Add focused web tests for found, fallback, metadata, and not-found behavior."
+  exclude:
+    - "Homepage/category card link rollout."
+    - "Worker service changes beyond consuming the exported service."
+    - "Sitemap, robots, archive, structured data, comments, sharing, or related articles."
+    - "Source attribution UI unless Architect explicitly reopens that scope."
+
+expected_changes:
+  code:
+    required: true
+    paths:
+      - "apps/web/src/app/(public)/[locale]/articles/[slug]/"
+      - "apps/web/src/lib/public-article-detail.ts"
+      - "apps/web/src/lib/public-article-routing.ts"
+      - "apps/web/src/components/public/article-detail-content.tsx"
+  tests:
+    required: true
+    paths:
+      - "apps/web/test/public-article-detail-page.test.ts"
+      - "apps/web/test/public-article-detail-components.test.tsx"
+  docs:
+    required: true
+    paths:
+      - "docs/milestones/m5-3-public-article-detail-pages/handoffs/T003-implement-article-detail-route-and-page-handoff.md"
+  config:
+    required: false
+    paths: []
+
+contracts:
+  required_existing:
+    - "docs/milestones/m5-3-public-article-detail-pages/plan.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/handoffs/T002-add-public-article-detail-read-service-handoff.md"
+  may_update:
+    - "apps/web/src/app/(public)/[locale]/articles/[slug]/"
+    - "apps/web/src/lib/public-article-detail.ts"
+    - "apps/web/src/lib/public-article-routing.ts"
+    - "apps/web/src/components/public/article-detail-content.tsx"
+    - "apps/web/test/public-article-detail-page.test.ts"
+    - "apps/web/test/public-article-detail-components.test.tsx"
+  must_not_update:
+    - "packages/db/src/schema/"
+    - "supabase/"
+
+acceptance_criteria:
+  - "`/[locale]/articles/[slug]` renders article content for a qualifying published article."
+  - "Unsupported locale, invalid slug, unknown slug, unpublished article, inactive category, and missing required fields use not-found behavior."
+  - "The web wrapper is server-only and closes database connections."
+  - "Article body is rendered without unsafe raw HTML injection unless T001 documented a sanitized HTML contract."
+  - "Metadata uses article-localized title/description fields with fallbacks and language alternates from `alternateSlugs` only."
+  - "No right-rail, source-attribution UI, related article, sitemap, robots, archive, comments, or structured-data scope is introduced."
+
+validation:
+  commands: []
+  package_commands:
+    - "pnpm --filter @topicpress/web test"
+    - "pnpm --filter @topicpress/web lint"
+    - "pnpm --filter @topicpress/web typecheck"
+  manual_checks:
+    - "Start `pnpm --filter @topicpress/web dev` and smoke `/en-gb/articles/<published-slug>` if local published data exists."
+    - "Record any limitation if local database state cannot provide a published article."
+
+handoff:
+  required: true
+  file: "docs/milestones/m5-3-public-article-detail-pages/handoffs/T003-implement-article-detail-route-and-page-handoff.md"
+
+qa:
+  required: true
+  reviewer_role: "qa_reviewer"
+  focus_areas:
+    - "Route rendering."
+    - "Metadata."
+    - "Not-found behavior."
+    - "Server/client boundary."
+    - "No unsafe body rendering."
+
+failure_handling:
+  if_blocked:
+    - "Set status to blocked."
+    - "Document missing backend DTO, route helper, metadata, or local data blocker."
+  if_qa_fails:
+    - "Set status to qa_failed."
+    - "Record QA finding IDs."
+    - "Create a bounded frontend fix task."
+
+completion:
+  required_outputs:
+    - "Code changes"
+    - "Tests"
+    - "Validation evidence"
+    - "Handoff file"
+  status_after_agent_finishes: "implemented"
+  status_after_qa_passes: "qa_passed"
+
+notes:
+  - "Prefer existing public page composition and CSS conventions from homepage/category pages."

@@ -1,0 +1,169 @@
+id: "T005"
+title: "QA article detail route"
+
+type: "qa"
+
+milestone: "m5-3-public-article-detail-pages"
+target_milestone: "m5-3-public-article-detail-pages"
+status: "qa_passed"
+
+owner: "qa"
+actor: "qa_reviewer"
+assigned_role: "qa_reviewer"
+
+priority: "high"
+risk: "medium"
+
+related_specs:
+  - "docs/PROJECT_STATE.md"
+  - "docs/frontend/routes.md"
+  - "docs/qa/test-strategy.md"
+  - "docs/milestones/m5-3-public-article-detail-pages/plan.md"
+
+related_issues:
+  - "root-web-build-hangs"
+
+depends_on:
+  - "T002"
+  - "T003"
+  - "T004"
+
+blocks:
+  - "T006"
+
+parallel_group: "E"
+
+parallelization:
+  can_run_in_parallel: false
+  parallel_safety_notes:
+    - "QA requires completed implementation handoffs."
+  conflict_check_required: true
+  conflict_check_fields:
+    - "depends_on"
+    - "blocks"
+    - "write_scope.allowed_paths"
+    - "contracts.required_existing"
+    - "contracts.may_update"
+
+input_context:
+  must_read:
+    - "AGENTS.md"
+    - "docs/PROJECT_STATE.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/plan.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/task-graph.yaml"
+    - "docs/milestones/m5-3-public-article-detail-pages/handoffs/T002-add-public-article-detail-read-service-handoff.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/handoffs/T003-implement-article-detail-route-and-page-handoff.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/handoffs/T004-link-public-article-cards-to-detail-pages-handoff.md"
+  should_read:
+    - "docs/frontend/routes.md"
+    - "docs/qa/test-strategy.md"
+  relevant_docs:
+    - "docs/architecture/boundaries.md"
+  relevant_files:
+    - "apps/web/test/"
+    - "apps/worker/test/public-article-detail.test.mjs"
+  do_not_read_initially: []
+
+write_scope:
+  mode: "docs-only"
+  allowed_paths:
+    - "docs/milestones/m5-3-public-article-detail-pages/qa-report.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/handoffs/T005-qa-article-detail-route-handoff.md"
+  forbidden_paths:
+    - "apps/"
+    - "packages/"
+    - "supabase/"
+  notes:
+    - "QA must not edit production code. File fix tasks for implementation defects."
+
+scope:
+  include:
+    - "Review implementation diffs, tests, handoffs, and validation evidence."
+    - "Run focused web and worker validation commands."
+    - "Run local route smoke checks when environment allows."
+    - "Record final QA result and any findings."
+  exclude:
+    - "Fixing implementation defects."
+    - "Updating canonical project docs beyond the QA report/handoff."
+
+expected_changes:
+  code:
+    required: false
+    paths: []
+  tests:
+    required: false
+    paths: []
+  docs:
+    required: true
+    paths:
+      - "docs/milestones/m5-3-public-article-detail-pages/qa-report.md"
+      - "docs/milestones/m5-3-public-article-detail-pages/handoffs/T005-qa-article-detail-route-handoff.md"
+  config:
+    required: false
+    paths: []
+
+contracts:
+  required_existing:
+    - "docs/milestones/m5-3-public-article-detail-pages/handoffs/T002-add-public-article-detail-read-service-handoff.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/handoffs/T003-implement-article-detail-route-and-page-handoff.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/handoffs/T004-link-public-article-cards-to-detail-pages-handoff.md"
+  may_update:
+    - "docs/milestones/m5-3-public-article-detail-pages/qa-report.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/handoffs/"
+  must_not_update:
+    - "apps/"
+    - "packages/"
+    - "supabase/"
+
+acceptance_criteria:
+  - "QA report records reviewed artifacts, command results, route smoke results, and findings."
+  - "Published-only and not-found protections are verified."
+  - "Article content rendering and card links are verified."
+  - "Any skipped validation is tied to an explicit blocker or known caveat."
+  - "No high-severity open finding remains unaccepted before T006."
+
+validation:
+  commands: []
+  package_commands:
+    - "pnpm --filter @topicpress/web test"
+    - "pnpm --filter @topicpress/web lint"
+    - "pnpm --filter @topicpress/web typecheck"
+    - "pnpm --filter @topicpress/worker test"
+    - "pnpm --filter @topicpress/worker build"
+  manual_checks:
+    - "Start `pnpm --filter @topicpress/web dev` and record the base URL."
+    - "Smoke `/`, `/en-gb`, `/uk-ua`, `/en-gb/categories/news`, `/en-gb/articles/<published-slug>`, `/fr-fr/articles/example`, `/en-gb/articles/Bad_Slug`, and `/en-gb/articles/unknown-slug` where local data permits."
+    - "Record root build caveat if root `pnpm build` is not run."
+
+handoff:
+  required: true
+  file: "docs/milestones/m5-3-public-article-detail-pages/handoffs/T005-qa-article-detail-route-handoff.md"
+
+qa:
+  required: true
+  reviewer_role: "qa_reviewer"
+  focus_areas:
+    - "Acceptance criteria."
+    - "Validation evidence."
+    - "Browser/dev route behavior."
+    - "Regression and deferred scope boundaries."
+
+failure_handling:
+  if_blocked:
+    - "Set status to blocked."
+    - "Document environment or data blocker and exact missing evidence."
+  if_qa_fails:
+    - "Set status to qa_failed."
+    - "Record QA finding IDs."
+    - "Create scoped fix tasks rather than editing code in QA."
+
+completion:
+  required_outputs:
+    - "QA report"
+    - "Validation evidence"
+    - "Handoff file"
+  status_after_agent_finishes: "implemented"
+  status_after_qa_passes: "qa_passed"
+
+notes:
+  - "If local data lacks published articles, QA should either create valid data through existing workflows or clearly mark route smoke as partially blocked."

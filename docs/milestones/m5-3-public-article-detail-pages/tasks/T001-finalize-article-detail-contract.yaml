@@ -1,0 +1,169 @@
+id: "T001"
+title: "Finalize article detail route/data contract"
+
+type: "contract"
+
+milestone: "m5-3-public-article-detail-pages"
+target_milestone: "m5-3-public-article-detail-pages"
+status: "qa_passed"
+
+owner: "orchestrator"
+actor: "architect"
+assigned_role: "architect"
+
+priority: "high"
+risk: "medium"
+
+related_specs:
+  - "docs/PROJECT_STATE.md"
+  - "docs/architecture/overview.md"
+  - "docs/architecture/boundaries.md"
+  - "docs/database/schema.md"
+  - "docs/frontend/routes.md"
+  - "docs/qa/test-strategy.md"
+  - "docs/milestones/m5-3-public-article-detail-pages/plan.md"
+
+related_issues:
+  - "root-web-build-hangs"
+
+depends_on: []
+
+blocks:
+  - "T002"
+  - "T003"
+
+parallel_group: "A"
+
+parallelization:
+  can_run_in_parallel: false
+  parallel_safety_notes:
+    - "This task defines the contract consumed by all implementation tasks."
+  conflict_check_required: true
+  conflict_check_fields:
+    - "depends_on"
+    - "blocks"
+    - "write_scope.allowed_paths"
+    - "contracts.required_existing"
+    - "contracts.may_update"
+
+input_context:
+  must_read:
+    - "AGENTS.md"
+    - "docs/PROJECT_STATE.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/plan.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/task-graph.yaml"
+  should_read:
+    - "docs/architecture/adr/ADR-001-monorepo-split-runtime.md"
+    - "docs/architecture/adr/ADR-006-database-backed-worker-execution.md"
+    - "docs/database/schema.md"
+    - "docs/frontend/routes.md"
+    - "docs/qa/test-strategy.md"
+  relevant_docs:
+    - "docs/architecture/boundaries.md"
+  relevant_files:
+    - "apps/worker/src/public-homepage/types.ts"
+    - "apps/worker/src/public-category-listing/types.ts"
+    - "apps/web/src/lib/public-category-page.ts"
+  do_not_read_initially: []
+
+write_scope:
+  mode: "docs-only"
+  allowed_paths:
+    - "docs/milestones/m5-3-public-article-detail-pages/plan.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/task-graph.yaml"
+    - "docs/milestones/m5-3-public-article-detail-pages/tasks/"
+    - "docs/milestones/m5-3-public-article-detail-pages/handoffs/"
+  forbidden_paths:
+    - "apps/"
+    - "packages/"
+    - "supabase/"
+  notes:
+    - "Do not edit production code in this task."
+
+scope:
+  include:
+    - "Confirm route slug lookup precedence for requested-locale slug, default-locale slug, and canonical article slug."
+    - "Confirm required fields after fallback: public slug, title, excerpt, and body."
+    - "Confirm article body rendering contract: plain text/paragraph rendering unless existing sanitized rich-text contract exists."
+    - "Confirm whether source attribution is included or deferred."
+    - "Clarify metadata fields and language alternate rules."
+    - "Update milestone docs if the contract changes."
+  exclude:
+    - "Production code implementation."
+    - "Schema or migration changes."
+    - "Sitemap, robots, archive, structured data, or right-rail modules."
+
+expected_changes:
+  code:
+    required: false
+    paths: []
+  tests:
+    required: false
+    paths: []
+  docs:
+    required: true
+    paths:
+      - "docs/milestones/m5-3-public-article-detail-pages/plan.md"
+      - "docs/milestones/m5-3-public-article-detail-pages/task-graph.yaml"
+      - "docs/milestones/m5-3-public-article-detail-pages/tasks/"
+  config:
+    required: false
+    paths: []
+
+contracts:
+  required_existing:
+    - "docs/milestones/m5-3-public-article-detail-pages/plan.md"
+  may_update:
+    - "docs/milestones/m5-3-public-article-detail-pages/plan.md"
+    - "docs/milestones/m5-3-public-article-detail-pages/task-graph.yaml"
+    - "docs/milestones/m5-3-public-article-detail-pages/tasks/"
+  must_not_update:
+    - "apps/"
+    - "packages/"
+    - "supabase/"
+
+acceptance_criteria:
+  - "The article detail route, data, metadata, not-found, fallback, and body rendering contracts are explicit in the milestone plan."
+  - "Open questions are resolved or converted into blockers before T002/T003 start."
+  - "No production code, package code, or database files are edited."
+  - "A handoff records contract decisions and any changes made to task scope."
+
+validation:
+  commands: []
+  package_commands: []
+  manual_checks:
+    - "Review milestone plan and task graph for consistency after contract edits."
+
+handoff:
+  required: true
+  file: "docs/milestones/m5-3-public-article-detail-pages/handoffs/T001-finalize-article-detail-contract-handoff.md"
+
+qa:
+  required: true
+  reviewer_role: "qa_reviewer"
+  focus_areas:
+    - "Verify implementation tasks have enough contract detail to proceed."
+    - "Verify scope boundaries remain docs-only."
+    - "Verify blockers are explicit."
+
+failure_handling:
+  if_blocked:
+    - "Set status to blocked."
+    - "Document unresolved product or architecture question."
+  if_qa_fails:
+    - "Set status to qa_failed."
+    - "Record QA finding IDs."
+    - "Fix the contract before implementation starts."
+
+completion:
+  required_outputs:
+    - "Contract update or documented no-op"
+    - "Manual validation evidence"
+    - "Handoff file"
+  status_after_agent_finishes: "implemented"
+  status_after_qa_passes: "qa_passed"
+
+notes:
+  - "Resolved: accept requested-locale localization slug first, default-locale localization slug second, and canonical article slug third as a compatibility fallback."
+  - "Resolved: source attribution is deferred from the required article detail DTO/UI for this slice."
+  - "Resolved: article body rendering is plain text paragraph rendering, with no raw HTML injection."

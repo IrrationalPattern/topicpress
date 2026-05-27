@@ -1,6 +1,6 @@
 # Topicpress Ownership Boundaries
 
-Updated: 2026-05-21
+Updated: 2026-05-27
 
 This document defines practical ownership boundaries for the current Topicpress MVP codebase. It is based on `docs/PROJECT_STATE.md`, accepted ADRs 001-006, the imported Obsidian architecture overview, M5 public-route notes, and the current local code structure.
 
@@ -20,7 +20,7 @@ This document defines practical ownership boundaries for the current Topicpress 
 
 Owns the Next.js App Router runtime:
 
-- locale-aware public routes, currently `/`, `/[locale]`, and `/[locale]/categories/[categorySlug]`
+- locale-aware public routes, currently `/`, `/[locale]`, `/[locale]/categories/[categorySlug]`, and `/[locale]/articles/[slug]`
 - future SEO endpoints and public pages when their slice is activated
 - public layout, shadcn/ui components, semantic CSS token consumption, and `next-intl` routing
 - lightweight internal editorial review pages under `/internal/editorial/review`
@@ -159,17 +159,17 @@ Implemented public routes:
 - `/` redirects to the configured default-locale homepage.
 - `/[locale]` renders the locale-aware homepage.
 - `/[locale]/categories/[categorySlug]` renders active category listing pages from published article state.
+- `/[locale]/articles/[slug]` renders durable published article detail pages from published article state.
+- `/robots.txt` renders configured crawler directives and a canonical sitemap pointer.
+- `/sitemap.xml` renders canonical absolute URLs for supported locale homepages, active category pages, and durable published article detail pages.
 
 Deferred public routes:
 
-- `/[locale]/articles/[slug]`
 - `/[locale]/archive`
-- `/robots.txt`
-- `/sitemap.xml`
 
 Deferred means not owned by incidental navigation, data fetching, metadata work, or component cleanup. Work on deferred routes should start only through a dedicated M5 slice or task that defines route contract, data contract, metadata/SEO behavior, validation commands, and QA acceptance criteria.
 
-Until article detail pages exist, public cards and category pages should avoid links that imply readable article permalinks are live. Until sitemap/robots exist, do not treat metadata helpers as a crawler coverage contract. Until archive exists, do not add chronological all-article pagination unless a task explicitly activates that surface.
+Public cards and category pages may link to readable article permalinks through shared article route helpers. Sitemap and robots output must stay rooted in committed site configuration and public-safe worker inventory, not request hosts or client input. Until archive exists, do not add chronological all-article pagination unless a task explicitly activates that surface.
 
 ## Agent Routing Rules
 
@@ -186,4 +186,4 @@ When a task crosses boundaries, split work by owner and keep write scopes disjoi
 ## Open Questions
 
 - Whether `apps/web` importing exported `@topicpress/worker` read services should remain acceptable for M5, or be moved behind a smaller shared read package before release hardening.
-- Whether article detail pages or sitemap/robots should be the next M5 slice after completed category pages.
+- Whether release hardening or archive/pagination should be the next M5 slice after completed sitemap and robots routes.

@@ -1,0 +1,219 @@
+id: "T003"
+title: "Implement sitemap and robots endpoints"
+
+type: "frontend"
+
+milestone: "m5-4-sitemap-and-robots"
+target_milestone: "m5-4-sitemap-and-robots"
+status: "qa_passed"
+
+owner: "implementation"
+actor: "frontend_developer"
+assigned_role: "frontend_developer"
+
+priority: "high"
+risk: "high"
+
+related_specs:
+  - "docs/PROJECT_STATE.md"
+  - "docs/frontend/routes.md"
+  - "docs/qa/test-strategy.md"
+  - "docs/milestones/m5-4-sitemap-and-robots/plan.md"
+
+related_issues:
+  - "root-web-build-hangs"
+
+depends_on:
+  - "T001"
+  - "T002"
+
+blocks:
+  - "T004"
+
+parallel_group: "C"
+
+parallelization:
+  can_run_in_parallel: false
+  parallel_safety_notes:
+    - "This task consumes the T002 inventory service and T001 canonical/robots decisions."
+  conflict_check_required: true
+  conflict_check_fields:
+    - "depends_on"
+    - "blocks"
+    - "write_scope.allowed_paths"
+    - "contracts.required_existing"
+    - "contracts.may_update"
+
+input_context:
+  must_read:
+    - "AGENTS.md"
+    - "docs/PROJECT_STATE.md"
+    - "docs/milestones/m5-4-sitemap-and-robots/plan.md"
+    - "docs/milestones/m5-4-sitemap-and-robots/task-graph.yaml"
+    - "docs/milestones/m5-4-sitemap-and-robots/tasks/T001-finalize-sitemap-robots-contract.yaml"
+    - "docs/milestones/m5-4-sitemap-and-robots/tasks/T002-public-sitemap-url-inventory-service.yaml"
+    - "docs/milestones/m5-4-sitemap-and-robots/handoffs/T001-finalize-sitemap-robots-contract-handoff.md"
+    - "docs/milestones/m5-4-sitemap-and-robots/handoffs/T002-public-sitemap-url-inventory-service-handoff.md"
+  should_read:
+    - "docs/frontend/routes.md"
+    - "docs/qa/test-strategy.md"
+    - "packages/config/src/index.ts"
+    - "apps/web/src/i18n/routing.ts"
+    - "apps/web/src/lib/public-article-routing.ts"
+  relevant_docs:
+    - "docs/architecture/boundaries.md"
+  relevant_files:
+    - "apps/web/src/app/(public)/[locale]/page.tsx"
+    - "apps/web/src/app/(public)/[locale]/categories/[categorySlug]/page.tsx"
+    - "apps/web/src/app/(public)/[locale]/articles/[slug]/page.tsx"
+    - "apps/web/src/lib/public-article-detail.ts"
+    - "apps/web/src/lib/public-article-routing.ts"
+    - "apps/web/package.json"
+    - "apps/web/test/public-category-route.test.ts"
+    - "apps/web/test/public-article-detail-page.test.ts"
+  do_not_read_initially: []
+
+write_scope:
+  mode: "bounded"
+  allowed_paths:
+    - "apps/web/src/app/sitemap.ts"
+    - "apps/web/src/app/robots.ts"
+    - "apps/web/src/lib/public-sitemap.ts"
+    - "apps/web/src/lib/public-seo-origin.ts"
+    - "apps/web/package.json"
+    - "apps/web/test/public-sitemap-route.test.ts"
+    - "apps/web/test/public-robots-route.test.ts"
+    - "apps/web/test/public-article-detail-page.test.ts"
+    - "apps/web/test/public-category-route.test.ts"
+    - "docs/milestones/m5-4-sitemap-and-robots/handoffs/"
+  forbidden_paths:
+    - "apps/worker/src/"
+    - "packages/db/src/schema/"
+    - "supabase/"
+  notes:
+    - "Return to Architect before adding new deployment environment variables, changing config contracts, or adding a sitemap dependency."
+    - "The public article detail route test may be updated only to remove or revise obsolete assertions that `apps/web/src/app/robots.ts` and `apps/web/src/app/sitemap.ts` are absent; this does not authorize article detail route behavior changes."
+    - "The public category route test may be updated only to remove or revise obsolete assertions that `apps/web/src/app/robots.ts` and `apps/web/src/app/sitemap.ts` are absent; this does not authorize category route behavior changes."
+
+scope:
+  include:
+    - "Add native Next.js App Router `apps/web/src/app/sitemap.ts` for `/sitemap.xml`."
+    - "Add native Next.js App Router `apps/web/src/app/robots.ts` for `/robots.txt`."
+    - "Add server-only web helper(s) for canonical origin, sitemap URL assembly, robots directive selection, and worker inventory reads."
+    - "Generate absolute canonical URLs for locale homepages, active categories, and public article details using `siteConfig.identity.domains.productionOriginPlaceholder` as the source of truth."
+    - "Generate robots text using the T001 VERCEL_ENV/NODE_ENV resolver and a canonical sitemap pointer."
+    - "Add focused web tests for sitemap URL generation, robots directives, canonical-origin behavior, and exclusions."
+    - "Revise obsolete absence assertions in `apps/web/test/public-article-detail-page.test.ts` that conflict with the new required `robots.ts` and `sitemap.ts` metadata routes."
+    - "Revise obsolete absence assertions in `apps/web/test/public-category-route.test.ts` that conflict with the new required `robots.ts` and `sitemap.ts` metadata routes."
+    - "Wire new focused tests into the web package test script if not already covered."
+  exclude:
+    - "Backend service implementation."
+    - "Database schema or migration changes."
+    - "Archive, structured data, pagination, source attribution, related content, ads, right rail, or release hardening."
+    - "Changing public article/detail rendering behavior."
+    - "Adding `next-sitemap` or another sitemap serialization dependency."
+
+expected_changes:
+  code:
+    required: true
+    paths:
+      - "apps/web/src/app/sitemap.ts"
+      - "apps/web/src/app/robots.ts"
+      - "apps/web/src/lib/public-sitemap.ts"
+      - "apps/web/src/lib/public-seo-origin.ts"
+  tests:
+    required: true
+    paths:
+      - "apps/web/test/public-sitemap-route.test.ts"
+      - "apps/web/test/public-robots-route.test.ts"
+      - "apps/web/test/public-article-detail-page.test.ts"
+      - "apps/web/test/public-category-route.test.ts"
+      - "apps/web/package.json"
+  docs:
+    required: true
+    paths:
+      - "docs/milestones/m5-4-sitemap-and-robots/handoffs/T003-implement-sitemap-and-robots-endpoints-handoff.md"
+  config:
+    required: false
+    paths: []
+
+contracts:
+  required_existing:
+    - "docs/milestones/m5-4-sitemap-and-robots/plan.md"
+    - "docs/milestones/m5-4-sitemap-and-robots/handoffs/T001-finalize-sitemap-robots-contract-handoff.md"
+    - "docs/milestones/m5-4-sitemap-and-robots/handoffs/T002-public-sitemap-url-inventory-service-handoff.md"
+  may_update:
+    - "apps/web/src/app/sitemap.ts"
+    - "apps/web/src/app/robots.ts"
+    - "apps/web/src/lib/public-sitemap.ts"
+    - "apps/web/src/lib/public-seo-origin.ts"
+    - "apps/web/package.json"
+    - "apps/web/test/public-sitemap-route.test.ts"
+    - "apps/web/test/public-robots-route.test.ts"
+    - "apps/web/test/public-article-detail-page.test.ts"
+    - "apps/web/test/public-category-route.test.ts"
+  must_not_update:
+    - "apps/worker/src/"
+    - "packages/db/src/schema/"
+    - "supabase/"
+
+acceptance_criteria:
+  - "`/sitemap.xml` is implemented through the Next.js sitemap route surface."
+  - "`/robots.txt` is implemented through the Next.js robots route surface."
+  - "Sitemap output includes supported locale homepage URLs, active category URLs, and public article URLs from the inventory service."
+  - "Sitemap output uses canonical absolute URLs from `siteConfig.identity.domains.productionOriginPlaceholder` and does not use localhost, `localOrigin`, request hosts, or `NEXT_PUBLIC_SITE_URL` when production origin is required."
+  - "Robots output uses configured directives for the resolved environment and includes one canonical sitemap pointer."
+  - "Robots environment tests cover Vercel production, Vercel preview, Vercel development, local/test/unset fallback, non-Vercel production fail-closed staging behavior, and unknown Vercel values."
+  - "`apps/web/test/public-article-detail-page.test.ts` no longer asserts that `apps/web/src/app/robots.ts` and `apps/web/src/app/sitemap.ts` are absent; any edit to that file is limited to this stale assertion cleanup."
+  - "`apps/web/test/public-category-route.test.ts` no longer asserts that `apps/web/src/app/robots.ts` and `apps/web/src/app/sitemap.ts` are absent; any edit to that file is limited to this stale assertion cleanup."
+  - "`next-sitemap` is not added as a dependency or build/postbuild step."
+  - "Web tests cover route helper behavior and are included in `pnpm --filter @topicpress/web test`."
+  - "No archive, structured data, pagination, schema, migration, source attribution, related content, ads, right rail, or release-hardening scope is introduced."
+
+validation:
+  commands: []
+  package_commands:
+    - "pnpm --filter @topicpress/web test"
+    - "pnpm --filter @topicpress/web lint"
+    - "pnpm --filter @topicpress/web typecheck"
+  manual_checks:
+    - "Confirm sitemap URLs are absolute and normalized."
+    - "Confirm robots output contains the expected directive and sitemap pointer."
+    - "Confirm local QA output uses the placeholder canonical origin and no localhost sitemap URLs."
+    - "Confirm no new client-side database access was introduced."
+
+handoff:
+  required: true
+  file: "docs/milestones/m5-4-sitemap-and-robots/handoffs/T003-implement-sitemap-and-robots-endpoints-handoff.md"
+
+qa:
+  required: true
+  reviewer_role: "qa_reviewer"
+  focus_areas:
+    - "Route output shape."
+    - "Canonical origin and robots directive behavior."
+    - "Frontend/server database boundary."
+    - "No deferred SEO or release-hardening scope creep."
+
+failure_handling:
+  if_blocked:
+    - "Set status to blocked."
+    - "Document whether the blocker is canonical origin, robots environment, backend inventory, or Next route behavior."
+    - "Return to Architect before adding new env/config contracts."
+  if_qa_fails:
+    - "Set status to qa_failed."
+    - "Record QA finding IDs."
+    - "Create a bounded frontend fix task."
+
+completion:
+  required_outputs:
+    - "Code changes"
+    - "Tests"
+    - "Validation evidence"
+    - "Handoff file"
+  status_after_agent_finishes: "implemented"
+  status_after_qa_passes: "qa_passed"
+
+notes:
+  - "Implementation agents must stop and ask if canonical host behavior is unclear."
+  - "T001 rejected `next-sitemap` for M5.4; use native Next.js metadata routes unless Architect reopens that decision."

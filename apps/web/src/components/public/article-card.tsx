@@ -12,6 +12,7 @@ export type ArticleCardHeadingLevel = "h2" | "h3";
 
 export interface ArticleCardProps {
   readonly article: HomepageArticle;
+  readonly articleHref?: string | undefined;
   readonly categoryHref?: string | undefined;
   readonly categoryLabel?: string | undefined;
   readonly className?: string | undefined;
@@ -23,6 +24,7 @@ export interface ArticleCardProps {
 
 export function ArticleCard({
   article,
+  articleHref,
   categoryHref,
   categoryLabel,
   className,
@@ -41,7 +43,7 @@ export function ArticleCard({
     <article className={cn("h-full", className)}>
       <Card className="h-full rounded-lg py-0">
         {heroImageUrl === undefined ? null : (
-          <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
+          <ArticleImageLink href={articleHref} title={article.title}>
             <Image
               alt=""
               className="size-full object-cover"
@@ -50,7 +52,7 @@ export function ArticleCard({
               src={heroImageUrl}
               unoptimized
             />
-          </div>
+          </ArticleImageLink>
         )}
 
         <CardHeader className="gap-3 pt-4">
@@ -74,7 +76,9 @@ export function ArticleCard({
           </div>
 
           <CardTitle className="text-xl leading-tight md:text-2xl">
-            <ArticleHeading className="text-balance">{article.title}</ArticleHeading>
+            <ArticleHeading className="text-balance">
+              <ArticleTitleLink href={articleHref}>{article.title}</ArticleTitleLink>
+            </ArticleHeading>
           </CardTitle>
 
           {subtitle === undefined ? null : (
@@ -94,6 +98,47 @@ export function ArticleCard({
         </CardContent>
       </Card>
     </article>
+  );
+}
+
+interface ArticleLinkProps {
+  readonly children: React.ReactNode;
+  readonly href?: string | undefined;
+}
+
+function ArticleTitleLink({ children, href }: ArticleLinkProps) {
+  if (href === undefined) {
+    return children;
+  }
+
+  return (
+    <Link
+      className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+      href={href}
+    >
+      {children}
+    </Link>
+  );
+}
+
+interface ArticleImageLinkProps {
+  readonly children: React.ReactNode;
+  readonly href?: string | undefined;
+  readonly title: string;
+}
+
+function ArticleImageLink({ children, href, title }: ArticleImageLinkProps) {
+  const className =
+    "relative block aspect-[16/9] w-full overflow-hidden bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card";
+
+  if (href === undefined) {
+    return <div className={className}>{children}</div>;
+  }
+
+  return (
+    <Link aria-label={title} className={className} href={href}>
+      {children}
+    </Link>
   );
 }
 

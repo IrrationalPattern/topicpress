@@ -1,0 +1,303 @@
+milestone:
+  id: "m5-3-public-article-detail-pages"
+  name: "Public Article Detail Pages"
+  target_milestone: "M5 Public Site and SEO Rendering"
+  status: "closed"
+  owner: "orchestrator"
+  plan_file: "docs/milestones/m5-3-public-article-detail-pages/plan.md"
+
+task_statuses:
+  allowed:
+    - draft
+    - ready
+    - blocked
+    - assigned
+    - implemented
+    - qa_failed
+    - qa_passed
+    - merged
+    - closed
+
+task_types:
+  allowed:
+    - planning
+    - contract
+    - architecture
+    - design
+    - implementation
+    - frontend
+    - backend
+    - infrastructure
+    - database
+    - migration
+    - qa
+    - documentation
+    - knowledge_consolidation
+    - bugfix
+    - spike
+
+roles:
+  allowed:
+    - architect
+    - frontend_developer
+    - backend_developer
+    - infrastructure_developer
+    - designer
+    - qa_reviewer
+    - knowledge_curator
+    - orchestrator
+
+global_required_context:
+  - "AGENTS.md"
+  - "docs/PROJECT_STATE.md"
+  - "docs/milestones/m5-3-public-article-detail-pages/plan.md"
+  - "docs/milestones/m5-3-public-article-detail-pages/task-graph.yaml"
+
+validation:
+  milestone_commands:
+    - "pnpm --filter @topicpress/web test"
+    - "pnpm --filter @topicpress/web lint"
+    - "pnpm --filter @topicpress/web typecheck"
+    - "pnpm --filter @topicpress/worker test"
+    - "pnpm --filter @topicpress/worker build"
+
+  optional_broadened_commands:
+    - "pnpm --filter @topicpress/config test"
+    - "pnpm db:check"
+    - "pnpm typecheck"
+    - "pnpm lint"
+    - "pnpm test"
+
+  known_caveats:
+    - "Root pnpm build remains affected by root-web-build-hangs and must not be the only completion gate."
+
+parallelization_rules:
+  allow_parallel_execution: false
+  rules:
+    - "Do not run tasks in parallel when one depends on the other."
+    - "Do not run tasks in parallel if one task blocks the other."
+    - "Do not run tasks in parallel if their write scopes overlap."
+    - "Do not run implementation tasks before T001 confirms the route/data contract."
+    - "Do not run frontend route work before T002 exports the backend read service."
+    - "Do not run QA before implementation handoffs exist."
+    - "Do not mark the milestone complete while high-severity QA findings remain."
+
+conflict_detection:
+  check_before_parallel_dispatch:
+    - "depends_on"
+    - "blocks"
+    - "write_scope.allowed_paths"
+    - "write_scope.forbidden_paths"
+    - "contracts.required_existing"
+    - "contracts.may_update"
+    - "related_specs"
+    - "related_issues"
+
+tasks:
+  - id: "T001"
+    title: "Finalize article detail route/data contract"
+    type: "contract"
+    target_milestone: "m5-3-public-article-detail-pages"
+    file: "docs/milestones/m5-3-public-article-detail-pages/tasks/T001-finalize-article-detail-contract.yaml"
+    status: "qa_passed"
+    owner: "orchestrator"
+    actor: "architect"
+    assigned_role: "architect"
+    depends_on: []
+    blocks:
+      - "T002"
+      - "T003"
+    parallel_group: "A"
+    estimated_risk: "medium"
+    write_scope:
+      mode: "docs-only"
+      allowed_paths:
+        - "docs/milestones/m5-3-public-article-detail-pages/"
+      forbidden_paths:
+        - "apps/"
+        - "packages/"
+        - "supabase/"
+
+  - id: "T002"
+    title: "Add public article detail read service"
+    type: "backend"
+    target_milestone: "m5-3-public-article-detail-pages"
+    file: "docs/milestones/m5-3-public-article-detail-pages/tasks/T002-add-public-article-detail-read-service.yaml"
+    status: "qa_passed"
+    owner: "implementation"
+    actor: "backend_developer"
+    assigned_role: "backend_developer"
+    depends_on:
+      - "T001"
+    blocks:
+      - "T003"
+    parallel_group: "B"
+    estimated_risk: "medium"
+    write_scope:
+      mode: "bounded"
+      allowed_paths:
+        - "apps/worker/src/public-article-detail/"
+        - "apps/worker/src/public-article-detail.ts"
+        - "apps/worker/src/index.ts"
+        - "apps/worker/test/public-article-detail.test.mjs"
+        - "docs/milestones/m5-3-public-article-detail-pages/handoffs/"
+      forbidden_paths:
+        - "apps/web/"
+        - "packages/db/src/schema/"
+        - "supabase/"
+
+  - id: "T003"
+    title: "Implement article detail route and page"
+    type: "frontend"
+    target_milestone: "m5-3-public-article-detail-pages"
+    file: "docs/milestones/m5-3-public-article-detail-pages/tasks/T003-implement-article-detail-route-and-page.yaml"
+    status: "qa_passed"
+    owner: "implementation"
+    actor: "frontend_developer"
+    assigned_role: "frontend_developer"
+    depends_on:
+      - "T001"
+      - "T002"
+    blocks:
+      - "T004"
+      - "T005"
+    parallel_group: "C"
+    estimated_risk: "high"
+    write_scope:
+      mode: "bounded"
+      allowed_paths:
+        - "apps/web/src/app/(public)/[locale]/articles/[slug]/"
+        - "apps/web/src/lib/public-article-detail.ts"
+        - "apps/web/src/lib/public-article-routing.ts"
+        - "apps/web/src/components/public/article-detail-content.tsx"
+        - "apps/web/test/public-article-detail-page.test.ts"
+        - "apps/web/test/public-article-detail-components.test.tsx"
+        - "docs/milestones/m5-3-public-article-detail-pages/handoffs/"
+      forbidden_paths:
+        - "apps/worker/src/"
+        - "packages/db/src/schema/"
+        - "supabase/"
+
+  - id: "T004"
+    title: "Link public article cards to detail pages"
+    type: "frontend"
+    target_milestone: "m5-3-public-article-detail-pages"
+    file: "docs/milestones/m5-3-public-article-detail-pages/tasks/T004-link-public-article-cards-to-detail-pages.yaml"
+    status: "qa_passed"
+    owner: "implementation"
+    actor: "frontend_developer"
+    assigned_role: "frontend_developer"
+    depends_on:
+      - "T003"
+    blocks:
+      - "T005"
+    parallel_group: "D"
+    estimated_risk: "medium"
+    write_scope:
+      mode: "bounded"
+      allowed_paths:
+        - "apps/web/src/components/public/article-card.tsx"
+        - "apps/web/src/components/public/article-list.tsx"
+        - "apps/web/src/components/public/homepage-content.tsx"
+        - "apps/web/src/components/public/category-listing-content.tsx"
+        - "apps/web/src/lib/public-article-routing.ts"
+        - "apps/web/test/public-homepage-components.test.tsx"
+        - "apps/web/test/public-homepage-route.test.tsx"
+        - "apps/web/test/public-category-components.test.tsx"
+        - "apps/web/test/public-category-route.test.ts"
+        - "apps/web/test/public-category-page.test.ts"
+        - "docs/milestones/m5-3-public-article-detail-pages/handoffs/"
+      forbidden_paths:
+        - "apps/worker/src/"
+        - "packages/db/src/schema/"
+        - "supabase/"
+
+  - id: "T005"
+    title: "QA article detail route"
+    type: "qa"
+    target_milestone: "m5-3-public-article-detail-pages"
+    file: "docs/milestones/m5-3-public-article-detail-pages/tasks/T005-qa-article-detail-route.yaml"
+    status: "qa_passed"
+    owner: "qa"
+    actor: "qa_reviewer"
+    assigned_role: "qa_reviewer"
+    depends_on:
+      - "T002"
+      - "T003"
+      - "T004"
+    blocks:
+      - "T006"
+    parallel_group: "E"
+    estimated_risk: "medium"
+    write_scope:
+      mode: "docs-only"
+      allowed_paths:
+        - "docs/milestones/m5-3-public-article-detail-pages/qa-report.md"
+        - "docs/milestones/m5-3-public-article-detail-pages/handoffs/"
+      forbidden_paths:
+        - "apps/"
+        - "packages/"
+        - "supabase/"
+
+  - id: "T006"
+    title: "Consolidate docs and milestone handoff"
+    type: "knowledge_consolidation"
+    target_milestone: "m5-3-public-article-detail-pages"
+    file: "docs/milestones/m5-3-public-article-detail-pages/tasks/T006-consolidate-docs-and-handoff.yaml"
+    status: "implemented"
+    owner: "docs"
+    actor: "knowledge_curator"
+    assigned_role: "knowledge_curator"
+    depends_on:
+      - "T005"
+    blocks: []
+    parallel_group: "F"
+    estimated_risk: "low"
+    write_scope:
+      mode: "docs-only"
+      allowed_paths:
+        - "docs/PROJECT_STATE.md"
+        - "docs/frontend/routes.md"
+        - "docs/qa/test-strategy.md"
+        - "docs/milestones/m5-3-public-article-detail-pages/"
+        - "README.md"
+      forbidden_paths:
+        - "apps/"
+        - "packages/"
+        - "supabase/"
+
+execution_order:
+  - phase: "contract"
+    tasks:
+      - "T001"
+  - phase: "backend"
+    tasks:
+      - "T002"
+  - phase: "frontend"
+    tasks:
+      - "T003"
+      - "T004"
+  - phase: "qa"
+    tasks:
+      - "T005"
+  - phase: "knowledge_consolidation"
+    tasks:
+      - "T006"
+
+qa:
+  qa_report_file: "docs/milestones/m5-3-public-article-detail-pages/qa-report.md"
+  require_qa_after_each_implementation_task: true
+  require_final_milestone_qa: true
+
+handoffs:
+  directory: "docs/milestones/m5-3-public-article-detail-pages/handoffs"
+  required_for_roles:
+    - architect
+    - frontend_developer
+    - backend_developer
+    - qa_reviewer
+    - knowledge_curator
+
+closeout:
+  file: "docs/milestones/m5-3-public-article-detail-pages/closeout.md"
+  required: true

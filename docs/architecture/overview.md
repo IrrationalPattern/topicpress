@@ -20,11 +20,11 @@ Root scripts in `package.json` delegate build, lint, typecheck, test, seed, inge
 
 ## Runtime Boundaries
 
-`apps/web` is the Next.js App Router application. It owns the public rendering surface, locale-aware routing, SEO metadata for implemented pages, shadcn/ui-based UI components, theme application, and the minimal internal editorial review list/detail surface under `/internal/editorial/review`. Implemented public routes are `/`, `/[locale]`, and `/[locale]/categories/[categorySlug]`; `/` redirects to the configured default-locale homepage.
+`apps/web` is the Next.js App Router application. It owns the public rendering surface, locale-aware routing, SEO metadata for implemented pages, shadcn/ui-based UI components, theme application, and the minimal internal editorial review list/detail surface under `/internal/editorial/review`. Implemented public routes are `/`, `/[locale]`, `/[locale]/categories/[categorySlug]`, `/[locale]/articles/[slug]`, `/robots.txt`, and `/sitemap.xml`; `/` redirects to the configured default-locale homepage.
 
 `apps/worker` owns long-running and failure-prone publishing work: feed ingestion, source-item persistence, clustering, draft generation, review status transitions, publication, and pipeline visibility. It exposes CLI entrypoints such as ingestion, seed sync, cluster/generate, and publish. Page requests must not perform AI generation, ingestion, clustering, or publishing work inline.
 
-The current web app imports selected read/query services from `@topicpress/worker` for homepage and category listing data. That is acceptable for the MVP because these paths are read-only public projections, but the architectural boundary remains that the web runtime renders durable database state while the worker mutates pipeline state.
+The current web app imports selected read/query services from `@topicpress/worker` for homepage, category listing, and article detail data. That is acceptable for the MVP because these paths are read-only public projections, but the architectural boundary remains that the web runtime renders durable database state while the worker mutates pipeline state.
 
 ## Shared Packages
 
@@ -81,25 +81,25 @@ The worker uses database-backed execution and records attempts in `pipeline_runs
 
 ## Public Rendering State
 
-Public rendering only exposes durable published content. Homepage and category queries require:
+Public rendering only exposes durable published content. Homepage, category, and article detail queries require:
 
 - `articles.status = "published"`
 - non-null `articles.published_at`
 - active category rows
 - usable article localization data for the requested locale or configured default-locale fallback; articles missing required public fields after fallback are omitted
 
-Category pages also validate slugs against the configured active taxonomy, then resolve the active database category by `config_key`. Invalid locale or category inputs render the app's not-found path. Current listing pages cap results at 12 and do not yet implement pagination.
+Category pages also validate slugs against the configured active taxonomy, then resolve the active database category by `config_key`. Article detail pages validate locale and slug shape, resolve requested-locale/default-locale/canonical slug matches through a narrow public read service, render persisted body text as escaped plain-text paragraphs, and build language alternates only from backend-provided `alternateSlugs`. Invalid locale, category, or article inputs render the app's not-found path. Current listing pages cap results at 12 and do not yet implement pagination.
 
-Article detail pages, archive pages, `robots.txt`, `sitemap.xml`, structured article data, production canonical rollout, and full release hardening remain deferred M5 work.
+Archive pages, structured article data, production canonical rollout, and full release hardening remain deferred M5 work. Production indexability remains blocked until the placeholder canonical origin is replaced with the real production origin in committed config.
 
 ## Current M5 Status
 
-M5 is the public site and SEO rendering milestone. As of `docs/PROJECT_STATE.md` updated 2026-05-26:
+M5 is the public site and SEO rendering milestone. As of `docs/PROJECT_STATE.md` updated 2026-05-27:
 
 - M5.1 Public Homepage is complete after QA-511.
 - M5.2 Category Pages is complete after QA-527.
-- The recommended next public rendering slice is article detail pages if readable article permalinks are the priority.
-- Sitemap and robots should proceed as a separate SEO surface after article/category URL policy is confirmed.
+- M5.3 Public Article Detail Pages is complete after QA and the QA-M5.3-001 metadata suffix fix.
+- M5.4 Sitemap And Robots is complete after QA, using native Next metadata routes and a worker public sitemap inventory service.
 - Root `pnpm build` still has a known web-build hang risk; focused web and worker validation paths have been used as current evidence.
 
 ## Accepted Architecture Decisions

@@ -1,5 +1,6 @@
 import * as React from "react";
 
+import { getPublicArticleRouteHref } from "@/lib/public-article-routing";
 import type { HomepageArticle } from "@/lib/public-homepage";
 import { cn } from "@/lib/utils";
 
@@ -71,6 +72,7 @@ export function ArticleList({
             <li key={article.id} className="min-w-0">
               <ArticleCard
                 article={article}
+                articleHref={getPublicArticleRouteHref(locale, article)}
                 categoryHref={getCategoryHref?.(article)}
                 categoryLabel={categoryLabel}
                 dateLabel={dateLabel}

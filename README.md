@@ -34,6 +34,8 @@ After Supabase starts, run `pnpm supabase:status` and copy the generated local k
 | Web app               | `http://localhost:3000`                                              |
 | English public site   | `http://localhost:3000/en-gb`                                        |
 | Ukrainian public site | `http://localhost:3000/uk-ua`                                        |
+| Robots                | `http://localhost:3000/robots.txt`                                   |
+| Sitemap               | `http://localhost:3000/sitemap.xml`                                  |
 | Editorial review UI   | `http://localhost:3000/internal/editorial/review`                    |
 | Supabase Studio       | `http://127.0.0.1:54323`                                             |
 | Supabase API          | `http://127.0.0.1:54321`                                             |
@@ -148,7 +150,7 @@ pnpm dev
 
 ## Verify The Public Homepage
 
-Use this focused path for the M5.1 homepage-only slice. It verifies the public homepage without requiring category pages, article pages, archive, sitemap, robots, or release-hardening checks.
+Use this focused path for the M5.1 homepage slice. It verifies the public homepage without requiring archive, sitemap, robots, or release-hardening checks.
 
 Prerequisites:
 
@@ -177,7 +179,7 @@ Verify routes in a browser or with local HTTP requests:
 - `http://localhost:3000/en-gb` renders the English public homepage.
 - `http://localhost:3000/uk-ua` renders the Ukrainian public homepage.
 - Unsupported locale paths such as `/fr-fr` return not found.
-- Deferred surfaces such as `/en-gb/articles/example`, `/en-gb/categories/example`, `/robots.txt`, and `/sitemap.xml` remain unavailable in M5.1.
+- `/robots.txt` and `/sitemap.xml` are implemented in the M5.4 SEO slice; `/en-gb/archive` remains deferred.
 
 Published-only behavior:
 
@@ -190,7 +192,7 @@ Do not paste API keys, database passwords, service-role keys, generated Supabase
 
 ## Verify The Public Category Pages
 
-Use this focused path for the M5.2 category-page slice after FE-523. It verifies `/[locale]/categories/[categorySlug]` without requiring article detail pages, archive, sitemap, robots, structured article data, or release-hardening checks.
+Use this focused path for the M5.2 category-page slice after FE-523. It verifies `/[locale]/categories/[categorySlug]` without requiring archive, sitemap, robots, structured article data, or release-hardening checks.
 
 Prerequisites:
 
@@ -235,11 +237,87 @@ Published-only and category filtering:
 
 Confirm deferred surfaces remain outside this slice:
 
-- Article cards and category pages must not introduce working article detail routes such as `/en-gb/articles/example`.
-- `/en-gb/archive`, `/robots.txt`, and `/sitemap.xml` remain outside M5.2 category-page verification.
-- Treat any article page, archive, sitemap, robots, structured article data, or release-hardening behavior as a separate slice unless a later task explicitly changes that scope.
+- Category article cards link to working article detail routes when published articles are present.
+- `/robots.txt` and `/sitemap.xml` are covered by the M5.4 sitemap/robots verification path. `/en-gb/archive` remains deferred.
+- Treat archive, sitemap, robots, structured article data, or release-hardening behavior as a separate slice unless a later task explicitly changes that scope.
 
 Do not paste API keys, database passwords, service-role keys, generated Supabase credentials, OpenAI keys, private production URLs, or raw database connection strings into verification notes or screenshots.
+
+## Verify The Public Article Detail Pages
+
+Use this focused path for the M5.3 article-detail slice. It verifies `/[locale]/articles/[slug]` without requiring archive, sitemap, robots, structured article data, source attribution, right-rail modules, or release-hardening checks.
+
+Prerequisites:
+
+- `.env` is configured from `.env.example`.
+- Local Supabase is running and migrated when checking database-backed article content.
+- `pnpm seed:sync` has been run so configured active categories exist in the local database.
+- At least one ready article has been published for the rendered article checks.
+
+Run the focused checks:
+
+```powershell
+pnpm --filter @topicpress/web test
+pnpm --filter @topicpress/web lint
+pnpm --filter @topicpress/web typecheck
+pnpm --filter @topicpress/worker test
+pnpm --filter @topicpress/worker build
+```
+
+The package test scripts enumerate the focused article-detail tests. Direct test commands can still be used to narrow a failure while debugging.
+
+Start the web app:
+
+```powershell
+pnpm --filter @topicpress/web dev
+```
+
+Verify article routes in a browser or with local HTTP requests:
+
+- `http://localhost:3000/en-gb` renders homepage article links to `/en-gb/articles/<slug>` when local published data exists.
+- `http://localhost:3000/en-gb/categories/news` renders category article links when local published data exists.
+- `http://localhost:3000/en-gb/articles/<published-slug>` renders the article title and body.
+- `http://localhost:3000/uk-ua/articles/<published-or-fallback-slug>` renders localized content or default-locale fallback according to the route contract.
+- `http://localhost:3000/fr-fr/articles/example` returns not found for an unsupported locale.
+- Invalid slug shapes such as `/en-gb/articles/Bad_Slug` return not found.
+- Unknown slugs such as `/en-gb/articles/unknown-slug` return not found.
+
+Published-only and deferred-scope behavior:
+
+- Article detail pages render only articles with `published` status, non-null `published_at`, an active category, a valid public slug, and required public fields after requested/default locale fallback.
+- Article body renders as escaped plain text paragraphs.
+- Article metadata uses article meta fields and fallbacks, with language alternates from backend-provided slugs only.
+- Source attribution, related articles, ads, comments, archive, sitemap, robots, right-rail modules, and structured article data remain outside M5.3.
+
+## Verify Sitemap And Robots
+
+Use this focused path for the M5.4 sitemap/robots slice. It verifies `/robots.txt` and `/sitemap.xml` without requiring archive, structured article data, production canonical rollout, or release hardening.
+
+Run the focused checks:
+
+```powershell
+pnpm --filter @topicpress/web test
+pnpm --filter @topicpress/web lint
+pnpm --filter @topicpress/web typecheck
+pnpm --filter @topicpress/worker test
+pnpm --filter @topicpress/worker build
+pnpm --filter @topicpress/config test
+```
+
+Start the web app:
+
+```powershell
+pnpm --filter @topicpress/web dev
+```
+
+Verify routes in a browser or with local HTTP requests:
+
+- `http://localhost:3000/robots.txt` returns local/dev non-indexing robots text with `Disallow: /`.
+- `http://localhost:3000/robots.txt` points to `https://ai-landscape-brief.example/sitemap.xml` until the production origin placeholder is replaced.
+- `http://localhost:3000/sitemap.xml` returns XML with canonical placeholder URLs for `/en-gb`, `/uk-ua`, active category pages, and qualifying public article detail pages.
+- Sitemap output must not use localhost/request-host URLs and must omit `/`, internal routes, archive routes, unsupported locales, invalid slugs, unpublished articles, null-`published_at` articles, inactive-category articles, incomplete fallback records, and ambiguous article slug candidates.
+
+Production release/indexability remains blocked while the committed canonical origin is still the `.example` placeholder.
 
 ## Publish A Generated Article
 
@@ -267,7 +345,7 @@ pnpm build
 pnpm format
 ```
 
-`pnpm build` is still listed for full workspace validation, but the local Windows workspace has a known root web build hang tracked in Obsidian at `Projects/Topicpress/06-issues/root-web-build-hangs`. For focused M5.1 homepage and M5.2 category-page verification, use the focused web and worker checks above unless the root build issue has been repaired.
+`pnpm build` is still listed for full workspace validation, but the local Windows workspace has a known root web build hang tracked in docs as `root-web-build-hangs`. For focused M5.1 homepage, M5.2 category-page, M5.3 article-detail, and M5.4 sitemap/robots verification, use the focused web and worker checks above unless the root build issue has been repaired.
 
 Focused checks:
 
@@ -276,5 +354,6 @@ pnpm --filter @topicpress/web test
 pnpm --filter @topicpress/web lint
 pnpm --filter @topicpress/web typecheck
 pnpm --filter @topicpress/worker test
+pnpm --filter @topicpress/worker build
 pnpm --filter @topicpress/ai test
 ```
