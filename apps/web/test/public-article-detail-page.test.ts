@@ -3,14 +3,16 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { PublicArticleDetail, PublicArticleDetailResult } from "@topicpress/worker";
-
 import {
   getArticleLanguageAlternates,
   getArticleMetadataDescription,
   getArticleMetadataTitle,
   getPublicArticleDetailMetadata,
 } from "../src/lib/public-article-routing.ts";
+import type {
+  PublicArticleDetail,
+  WebPublicArticleDetailResult,
+} from "../src/lib/public-article-detail.ts";
 import {
   getPublicArticlePath,
   isArticleSlugSegment,
@@ -56,7 +58,7 @@ const article = {
 const foundResult = {
   kind: "found",
   article,
-} satisfies PublicArticleDetailResult;
+} satisfies WebPublicArticleDetailResult;
 
 runTest("article route helper resolves supported locale segments and rejects invalid params", () => {
   assert.equal(getPublicArticlePath("en-GB", "published-ai-brief"), "/en-gb/articles/published-ai-brief");

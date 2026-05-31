@@ -1,0 +1,147 @@
+id: "T006"
+title: "Editorial review image UI regeneration flow"
+type: "frontend"
+milestone: "m5-5-generated-article-hero-images"
+target_milestone: "m5-5-generated-article-hero-images"
+status: "implemented"
+owner: "implementation"
+actor: "frontend_developer"
+assigned_role: "frontend_developer"
+priority: "medium"
+risk: "medium"
+
+related_specs:
+  - "docs/frontend/routes.md"
+  - "docs/qa/test-strategy.md"
+  - "docs/architecture/adr/ADR-007-generated-article-hero-images.md"
+  - "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+
+depends_on: ["T002", "T005"]
+blocks: ["T007"]
+parallel_group: "E"
+
+parallelization:
+  can_run_in_parallel: false
+  parallel_safety_notes:
+    - "Consumes review DTOs and actions from T005."
+  conflict_check_required: true
+
+input_context:
+  must_read:
+    - "AGENTS.md"
+    - "docs/PROJECT_STATE.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/task-graph.yaml"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T005-review-approval-and-publish-gate-handoff.md"
+    - "docs/frontend/routes.md"
+  should_read:
+    - "apps/web/src/app/(internal)/internal/editorial/review/"
+    - "apps/web/src/lib/article-review.ts"
+    - "apps/web/src/components/public/article-detail-content.tsx"
+    - "apps/web/src/lib/public-article-detail.ts"
+  relevant_files:
+    - "apps/web/src/app/(internal)/internal/editorial/review/"
+    - "apps/web/src/lib/article-review.ts"
+    - "apps/web/src/components/public/article-detail-content.tsx"
+    - "apps/web/test/"
+
+write_scope:
+  mode: "bounded"
+  allowed_paths:
+    - "apps/web/src/app/(internal)/internal/editorial/review/"
+    - "apps/web/src/lib/article-review.ts"
+    - "apps/web/src/components/public/article-detail-content.tsx"
+    - "apps/web/src/lib/public-article-detail.ts"
+    - "apps/web/test/"
+    - "apps/web/package.json"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/"
+  forbidden_paths:
+    - "apps/worker/src/"
+    - "packages/db/src/schema/"
+    - "supabase/migrations/"
+
+scope:
+  include:
+    - "Show the current generated hero image preview in internal article review detail."
+    - "Show candidate status, provider/model, style policy, and sanitized prompt or prompt summary."
+    - "Add explicit generate/regenerate controls wired to server actions/services."
+    - "Show disabled/loading/error states for generate/regenerate actions."
+    - "Render public generated-image disclosure label if T005 exposes enough metadata and product has not rejected it."
+    - "Add focused web tests for review UI states, actions, and disclosure rendering."
+  exclude:
+    - "Backend generation service implementation."
+    - "Schema or storage changes."
+    - "New public routes."
+    - "Client-side direct database/storage/OpenAI access."
+
+expected_changes:
+  code:
+    required: true
+    paths:
+      - "apps/web/src/app/(internal)/internal/editorial/review/"
+      - "apps/web/src/lib/article-review.ts"
+      - "apps/web/src/components/public/article-detail-content.tsx"
+      - "apps/web/src/lib/public-article-detail.ts"
+  tests:
+    required: true
+    paths:
+      - "apps/web/test/"
+      - "apps/web/package.json"
+  docs:
+    required: true
+    paths:
+      - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T006-editorial-review-image-ui-handoff.md"
+
+contracts:
+  required_existing:
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T005-review-approval-and-publish-gate-handoff.md"
+  may_update:
+    - "apps/web/src/app/(internal)/internal/editorial/review/"
+    - "apps/web/src/lib/article-review.ts"
+    - "apps/web/src/components/public/article-detail-content.tsx"
+    - "apps/web/src/lib/public-article-detail.ts"
+    - "apps/web/test/"
+  must_not_update:
+    - "apps/worker/src/"
+    - "packages/db/src/schema/"
+    - "supabase/migrations/"
+
+acceptance_criteria:
+  - "Internal review detail shows current generated image preview and generation state."
+  - "Generate/regenerate controls call server-side actions and show success/failure states."
+  - "Regeneration is explicit and never happens on page load."
+  - "UI never exposes OpenAI keys, service-role keys, or raw provider responses to public routes."
+  - "Public article page renders the generated hero image using `articles.hero_image_url` only."
+  - "Public disclosure label is present for generated hero images unless product rejects it in this task handoff."
+  - "Web tests cover internal review image UI and public disclosure behavior."
+
+validation:
+  package_commands:
+    - "pnpm --filter @topicpress/web test"
+    - "pnpm --filter @topicpress/web lint"
+    - "pnpm --filter @topicpress/web typecheck"
+  manual_checks:
+    - "Smoke internal review detail with current image, failed generation state, and missing image."
+    - "Smoke public article detail for generated image and no image."
+
+handoff:
+  required: true
+  file: "docs/milestones/m5-5-generated-article-hero-images/handoffs/T006-editorial-review-image-ui-handoff.md"
+
+qa:
+  required: true
+  reviewer_role: "qa_reviewer"
+  focus_areas:
+    - "Regeneration ergonomics."
+    - "Disclosure label."
+    - "Public/private data boundary."
+    - "Responsive image layout."
+
+completion:
+  required_outputs:
+    - "Frontend changes"
+    - "Web tests"
+    - "Validation evidence"
+    - "Handoff file"
+  status_after_agent_finishes: "implemented"
+  status_after_qa_passes: "qa_passed"

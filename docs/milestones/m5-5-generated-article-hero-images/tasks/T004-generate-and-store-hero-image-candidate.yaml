@@ -1,0 +1,150 @@
+id: "T004"
+title: "Generate/regenerate public hero image"
+type: "backend"
+milestone: "m5-5-generated-article-hero-images"
+target_milestone: "m5-5-generated-article-hero-images"
+status: "implemented"
+owner: "implementation"
+actor: "backend_developer"
+assigned_role: "backend_developer"
+priority: "high"
+risk: "high"
+
+related_specs:
+  - "docs/architecture/boundaries.md"
+  - "docs/architecture/adr/ADR-006-database-backed-worker-execution.md"
+  - "docs/architecture/adr/ADR-007-generated-article-hero-images.md"
+  - "docs/database/schema.md"
+  - "docs/infrastructure/secrets.md"
+  - "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+
+depends_on: ["T002", "T003"]
+blocks: ["T005", "T006", "T007"]
+parallel_group: "C"
+
+parallelization:
+  can_run_in_parallel: false
+  parallel_safety_notes:
+    - "Consumes the T002 table and T003 provider."
+  conflict_check_required: true
+
+input_context:
+  must_read:
+    - "AGENTS.md"
+    - "docs/PROJECT_STATE.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/task-graph.yaml"
+    - "docs/milestones/m5-5-generated-article-hero-images/tasks/T002-add-hero-image-candidate-data-model.yaml"
+    - "docs/milestones/m5-5-generated-article-hero-images/tasks/T003-add-openai-image-provider.yaml"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T002-add-hero-image-candidate-data-model-handoff.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T003-add-openai-image-provider-handoff.md"
+  should_read:
+    - "apps/worker/src/draft-creation/"
+    - "apps/worker/src/cluster-generation-run/"
+    - "apps/worker/src/article-review/"
+    - "packages/ai/src/"
+  relevant_files:
+    - "apps/worker/src/"
+    - "apps/worker/test/"
+
+write_scope:
+  mode: "bounded"
+  allowed_paths:
+    - "apps/worker/src/"
+    - "apps/worker/test/"
+    - "apps/worker/package.json"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/"
+  forbidden_paths:
+    - "apps/web/"
+    - "packages/db/src/schema/"
+    - "supabase/migrations/"
+  notes:
+    - "Return to Architect before adding a queue platform, fallback provider, or schema changes."
+
+scope:
+  include:
+    - "Add worker service/CLI or pipeline step to generate or intentionally regenerate the current hero image for an article in review."
+    - "Build sanitized editorial-illustration prompt from article title, excerpt, category, body summary, and source context as needed."
+    - "Call the T003 image provider for exactly one image."
+    - "Write decoded image bytes to the public `article-hero-images` bucket."
+    - "Update or insert the single current-image metadata row idempotently where appropriate."
+    - "Update `articles.hero_image_url` to the generated public image URL on successful generation/regeneration."
+    - "Record sanitized `pipeline_runs` evidence."
+    - "Ensure regeneration is explicit and never triggered by page reads."
+    - "Add worker tests for success, idempotency, provider failure, storage failure, ineligible article, duplicate candidate, and secret-safe errors."
+  exclude:
+    - "Approval/rejection actions."
+    - "Private candidate bucket writes."
+    - "Public bucket promotion/copy steps."
+    - "Frontend UI."
+    - "Fallback providers."
+
+expected_changes:
+  code:
+    required: true
+    paths:
+      - "apps/worker/src/"
+  tests:
+    required: true
+    paths:
+      - "apps/worker/test/"
+      - "apps/worker/package.json"
+  docs:
+    required: true
+    paths:
+      - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T004-generate-and-store-hero-image-candidate-handoff.md"
+  config:
+    required: false
+    paths: []
+
+contracts:
+  required_existing:
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T002-add-hero-image-candidate-data-model-handoff.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T003-add-openai-image-provider-handoff.md"
+  may_update:
+    - "apps/worker/src/"
+    - "apps/worker/test/"
+    - "apps/worker/package.json"
+  must_not_update:
+    - "apps/web/"
+    - "packages/db/src/schema/"
+    - "supabase/migrations/"
+
+acceptance_criteria:
+  - "Generation service creates or updates at most one current generated hero image record per article."
+  - "Image bytes are stored in the public `article-hero-images` bucket and persisted with storage metadata."
+  - "`articles.hero_image_url` is updated to the generated public image URL on success."
+  - "Generation status is generated/current or failed according to outcome."
+  - "Generated prompt follows editorial-illustration policy and excludes fake photojournalism language."
+  - "Pipeline evidence is sanitized and reproducible."
+  - "Worker tests are wired into `pnpm --filter @topicpress/worker test`."
+
+validation:
+  package_commands:
+    - "pnpm --filter @topicpress/worker test"
+    - "pnpm --filter @topicpress/worker build"
+  manual_checks:
+    - "Confirm regeneration is explicit and not triggered by page reads."
+    - "Confirm failures do not persist raw provider responses or secrets."
+
+handoff:
+  required: true
+  file: "docs/milestones/m5-5-generated-article-hero-images/handoffs/T004-generate-and-store-hero-image-candidate-handoff.md"
+
+qa:
+  required: true
+  reviewer_role: "qa_reviewer"
+  focus_areas:
+    - "Idempotency."
+    - "Public storage."
+    - "One-current-image invariant."
+    - "Style prompt policy."
+
+completion:
+  required_outputs:
+    - "Worker service/CLI or pipeline changes"
+    - "Worker tests"
+    - "Validation evidence"
+    - "Handoff file"
+  status_after_agent_finishes: "implemented"
+  status_after_qa_passes: "qa_passed"

@@ -2,6 +2,85 @@ import type { CategoryConfig, LocaleCode, SiteConfig } from "@topicpress/config"
 
 export type AiProviderMode = "fixture" | "live";
 
+export type ImageProviderName = "openai";
+
+export type ImageStylePolicy = "editorial_illustration";
+
+export type ImageOutputFormat = "png" | "webp";
+
+export type ImageSize = "1024x1024" | "1024x1536" | "1536x1024";
+
+export interface ArticleHeroImagePromptInput {
+  readonly locale: LocaleCode;
+  readonly title: string;
+  readonly excerpt: string;
+  readonly subtitle?: string;
+  readonly body?: string;
+  readonly categoryLabel?: string;
+  readonly keywordHints?: readonly string[];
+}
+
+export interface ArticleHeroImagePrompt {
+  readonly system: string;
+  readonly user: string;
+  readonly stylePolicy: ImageStylePolicy;
+  readonly outputContract: ArticleHeroImageOutputContract;
+  readonly metadata: ArticleHeroImagePromptMetadata;
+}
+
+export interface ArticleHeroImageOutputContract {
+  readonly imageCount: 1;
+  readonly stylePolicy: ImageStylePolicy;
+  readonly size: ImageSize;
+  readonly outputFormat: ImageOutputFormat;
+  readonly forbiddenElements: readonly string[];
+}
+
+export interface ArticleHeroImagePromptMetadata {
+  readonly locale: LocaleCode;
+  readonly title: string;
+  readonly categoryLabel?: string;
+  readonly keywordHints: readonly string[];
+}
+
+export interface ArticleHeroImageGenerationMetadata {
+  readonly provider: ImageProviderName;
+  readonly mode: AiProviderMode;
+  readonly model: string;
+  readonly promptHash: string;
+  readonly stylePolicy: ImageStylePolicy;
+  readonly contentType: string;
+  readonly width: number;
+  readonly height: number;
+  readonly sizeBytes: number;
+  readonly outputFormat: ImageOutputFormat;
+  readonly generatedAt: string;
+  readonly responseId?: string;
+  readonly revisedPrompt?: string;
+}
+
+export interface ArticleHeroImageCandidate {
+  readonly bytes: Uint8Array;
+  readonly base64: string;
+  readonly metadata: ArticleHeroImageGenerationMetadata;
+}
+
+export interface ImageProviderRequest {
+  readonly prompt: ArticleHeroImagePrompt;
+  readonly now: Date;
+}
+
+export interface ImageProvider {
+  readonly id: string;
+  readonly mode: AiProviderMode;
+  generateImage(request: ImageProviderRequest): Promise<ArticleHeroImageCandidate>;
+}
+
+export interface GenerateArticleHeroImageOptions {
+  readonly provider?: ImageProvider;
+  readonly now?: Date;
+}
+
 export interface ArticleSourceInput {
   readonly sourceItemId: string;
   readonly sourceName: string;

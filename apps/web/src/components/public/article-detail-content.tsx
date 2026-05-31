@@ -1,5 +1,4 @@
 import { CalendarDays } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import * as React from "react";
 
@@ -62,17 +61,22 @@ export function ArticleDetailContent({
       </header>
 
       {heroImageUrl === undefined ? null : (
-        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg bg-muted">
-          <Image
-            alt=""
-            className="size-full object-cover"
-            fill
-            priority
-            sizes="(min-width: 768px) 768px, 100vw"
-            src={heroImageUrl}
-            unoptimized
-          />
-        </div>
+        <figure className="flex flex-col gap-2">
+          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg bg-muted">
+            {React.createElement("img", {
+              alt: "",
+              className: "size-full object-cover",
+              decoding: "async",
+              loading: "eager",
+              src: heroImageUrl,
+            })}
+          </div>
+          {article.heroImageDisclosure === undefined ? null : (
+            <figcaption>
+              <Badge variant="secondary">{article.heroImageDisclosure.label}</Badge>
+            </figcaption>
+          )}
+        </figure>
       )}
 
       <div className="flex flex-col gap-5 text-base leading-8 text-foreground md:text-lg md:leading-9">

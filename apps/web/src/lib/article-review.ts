@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import * as schema from "@topicpress/db";
 import {
+  generateHeroImageCandidateForArticle,
   listReviewableArticles,
   loadArticleReview,
   publishArticle,
@@ -13,6 +14,7 @@ import {
   type ArticleReviewArticle,
   type ArticleReviewTransitionResult,
   type ArticleReviewTransitionStatus,
+  type GenerateHeroImageCandidateResult,
   type LoadArticleReviewResult,
   type PublishArticleResult,
 } from "@topicpress/worker";
@@ -68,6 +70,18 @@ export async function publishEditorialArticle(articleId: string): Promise<Publis
 
   try {
     return await publishArticle(client.db, { articleId, operatorType: "internal_editorial" });
+  } finally {
+    await client.close();
+  }
+}
+
+export async function generateOrRegenerateEditorialArticleHeroImage(input: {
+  readonly articleId: string;
+}): Promise<GenerateHeroImageCandidateResult> {
+  const client = createDatabaseClient();
+
+  try {
+    return await generateHeroImageCandidateForArticle(client.db, input);
   } finally {
     await client.close();
   }

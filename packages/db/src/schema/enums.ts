@@ -8,6 +8,11 @@ export const articleStatusEnum = pgEnum("article_status", [
   "failed",
 ]);
 
+export const articleHeroImageCandidateStatusEnum = pgEnum("article_hero_image_candidate_status", [
+  "generated",
+  "failed",
+]);
+
 export const sourceItemStatusEnum = pgEnum("source_item_status", [
   "pending",
   "normalized",
@@ -38,6 +43,7 @@ export const pipelineRunStatusEnum = pgEnum("pipeline_run_status", [
 export const sourceKindEnum = pgEnum("source_kind", ["rss", "atom", "json_feed"]);
 
 export type ArticleStatus = (typeof articleStatusEnum.enumValues)[number];
+export type ArticleHeroImageCandidateStatus = (typeof articleHeroImageCandidateStatusEnum.enumValues)[number];
 export type SourceItemStatus = (typeof sourceItemStatusEnum.enumValues)[number];
 export type ClusterStatus = (typeof clusterStatusEnum.enumValues)[number];
 export type PipelineRunType = (typeof pipelineRunTypeEnum.enumValues)[number];

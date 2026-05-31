@@ -1,6 +1,6 @@
 # Frontend Routes
 
-Updated: 2026-05-27
+Updated: 2026-06-01
 
 Evidence sources:
 
@@ -11,6 +11,8 @@ Evidence sources:
 - `docs/milestones/m5-3-public-article-detail-pages/handoffs/QA-M5.3-001-metadata-title-suffix-fix-handoff.md`
 - `docs/milestones/m5-4-sitemap-and-robots/qa-report.md`
 - `docs/milestones/m5-4-sitemap-and-robots/closeout.md`
+- `docs/milestones/m5-5-generated-article-hero-images/qa-report.md`
+- `docs/milestones/m5-5-generated-article-hero-images/handoffs/T007-qa-generated-hero-images-handoff.md`
 - `README.md` public homepage/category verification sections
 - `apps/web/src`
 - `apps/web/test`
@@ -19,7 +21,7 @@ Evidence sources:
 
 This document records the currently implemented Topicpress frontend route contract. It is a documentation handoff for the route surface only; it does not add, remove, or change application routes.
 
-Topicpress is currently in M5 Public Site and SEO Rendering. The completed public slices are M5.1 Public Homepage, M5.2 Category Pages, M5.3 Public Article Detail Pages, and M5.4 Sitemap and Robots. Archive, structured article data, production canonical rollout, and release hardening remain deferred.
+Topicpress is currently in M5 Public Site and SEO Rendering. The completed public slices are M5.1 Public Homepage, M5.2 Category Pages, M5.3 Public Article Detail Pages, M5.4 Sitemap and Robots, and M5.5 Generated Article Hero Images. Archive, structured article data, production canonical rollout, and release hardening remain deferred.
 
 ## Implemented Routes
 
@@ -58,6 +60,8 @@ Eligibility and lookup behavior:
 Rendering behavior:
 
 - The article page renders title, optional subtitle, excerpt, category link, publication date, optional hero image, and body.
+- If the public hero URL matches generated-image provenance from the one-current-image metadata row, the page renders the disclosure label `AI-generated illustration`.
+- Public article pages render the image from `articles.hero_image_url`; they do not expose prompt text, provider raw responses, storage paths, service-role credentials, or OpenAI credentials.
 - Body content is rendered as escaped plain text paragraphs. It is not treated as trusted HTML.
 - The right rail is absent/empty.
 - M5.3 did not introduce source attribution, related articles, ads, newsletter, comments, social sharing, archive, structured article data, or production canonical rollout.
@@ -203,6 +207,7 @@ Check these representative paths locally:
 - `/en-gb/categories/news` renders category article links when local published data exists.
 - `/en-gb/articles/<published-slug>` renders article title and body for a published article.
 - `/uk-ua/articles/<published-or-fallback-slug>` renders localized content or default-locale fallback according to contract.
+- A published article with generated-image provenance renders its hero image and `AI-generated illustration` disclosure without exposing prompt, candidate status, OpenAI key, service-role, or `sk-` text.
 - `/fr-fr/articles/example` returns not found for an unsupported locale.
 - `/en-gb/articles/Bad_Slug` and `/en-gb/articles/unknown-slug` use article not-found behavior.
 - `/robots.txt` returns local/dev non-indexing robots text with one canonical sitemap pointer.

@@ -1,0 +1,344 @@
+milestone:
+  id: "m5-5-generated-article-hero-images"
+  name: "Generated Article Hero Images"
+  target_milestone: "M5 Public Site and SEO Rendering"
+  status: "closed"
+  owner: "orchestrator"
+  plan_file: "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+
+task_statuses:
+  allowed:
+    - draft
+    - ready
+    - pending
+    - blocked
+    - assigned
+    - implemented
+    - qa_failed
+    - qa_passed
+    - merged
+    - closed
+
+task_types:
+  allowed:
+    - planning
+    - contract
+    - architecture
+    - design
+    - implementation
+    - frontend
+    - backend
+    - infrastructure
+    - database
+    - migration
+    - qa
+    - documentation
+    - knowledge_consolidation
+    - bugfix
+    - spike
+
+roles:
+  allowed:
+    - architect
+    - data_agent
+    - frontend_developer
+    - backend_developer
+    - infrastructure_developer
+    - designer
+    - qa_reviewer
+    - knowledge_curator
+    - orchestrator
+
+global_required_context:
+  - "AGENTS.md"
+  - "docs/PROJECT_STATE.md"
+  - "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+  - "docs/milestones/m5-5-generated-article-hero-images/task-graph.yaml"
+  - "docs/architecture/adr/ADR-007-generated-article-hero-images.md"
+
+validation:
+  milestone_commands:
+    - "pnpm --filter @topicpress/db build"
+    - "pnpm db:check"
+    - "pnpm db:migrate"
+    - "pnpm --filter @topicpress/ai test"
+    - "pnpm --filter @topicpress/worker test"
+    - "pnpm --filter @topicpress/worker build"
+    - "pnpm --filter @topicpress/web test"
+    - "pnpm --filter @topicpress/web lint"
+    - "pnpm --filter @topicpress/web typecheck"
+  optional_broadened_commands:
+    - "pnpm typecheck"
+    - "pnpm lint"
+    - "pnpm test"
+  known_caveats:
+    - "Root pnpm build remains affected by root-web-build-hangs and must not be the only completion gate."
+
+parallelization_rules:
+  allow_parallel_execution: true
+  rules:
+    - "T002 and T003 may run in parallel after T001 because database/storage contract work and AI provider work have disjoint write scopes."
+    - "Do not run tasks in parallel if one depends on the other."
+    - "Do not run tasks in parallel if one task blocks the other."
+    - "Do not run tasks in parallel if their write scopes overlap."
+    - "Do not run T004 before both T002 and T003 are implemented."
+    - "Do not run T006 before T005 defines review DTOs/actions."
+    - "Do not run QA before implementation handoffs exist."
+
+conflict_detection:
+  check_before_parallel_dispatch:
+    - "depends_on"
+    - "blocks"
+    - "write_scope.allowed_paths"
+    - "write_scope.forbidden_paths"
+    - "contracts.required_existing"
+    - "contracts.may_update"
+    - "related_specs"
+    - "related_issues"
+
+tasks:
+  - id: "T001"
+    title: "Finalize generated image contract"
+    type: "contract"
+    target_milestone: "m5-5-generated-article-hero-images"
+    file: "docs/milestones/m5-5-generated-article-hero-images/tasks/T001-finalize-generated-image-contract.yaml"
+    status: "implemented"
+    owner: "orchestrator"
+    actor: "architect"
+    assigned_role: "architect"
+    depends_on: []
+    blocks: ["T002", "T003", "T004", "T005", "T006"]
+    parallel_group: "A"
+    estimated_risk: "high"
+    write_scope:
+      mode: "docs-only"
+      allowed_paths:
+        - "docs/milestones/m5-5-generated-article-hero-images/"
+        - "docs/architecture/adr/ADR-007-generated-article-hero-images.md"
+        - "docs/PROJECT_STATE.md"
+      forbidden_paths:
+        - "apps/"
+        - "packages/"
+        - "supabase/"
+
+  - id: "T002"
+    title: "Revise hero image metadata model"
+    type: "database"
+    target_milestone: "m5-5-generated-article-hero-images"
+    file: "docs/milestones/m5-5-generated-article-hero-images/tasks/T002-add-hero-image-candidate-data-model.yaml"
+    status: "implemented"
+    owner: "implementation"
+    actor: "data_agent"
+    assigned_role: "data_agent"
+    depends_on: ["T001"]
+    blocks: ["T004", "T005", "T006", "T007"]
+    parallel_group: "B"
+    estimated_risk: "high"
+    write_scope:
+      mode: "bounded"
+      allowed_paths:
+        - "packages/db/src/schema/articles.ts"
+        - "packages/db/src/schema/relations.ts"
+        - "packages/db/src/schema/index.ts"
+        - "supabase/migrations/"
+        - "supabase/migrations/meta/"
+        - "docs/database/schema.md"
+        - "docs/infrastructure/secrets.md"
+        - "docs/milestones/m5-5-generated-article-hero-images/handoffs/"
+      forbidden_paths:
+        - "apps/web/"
+        - "apps/worker/src/"
+        - "packages/ai/src/"
+
+  - id: "T003"
+    title: "Add OpenAI image provider"
+    type: "implementation"
+    target_milestone: "m5-5-generated-article-hero-images"
+    file: "docs/milestones/m5-5-generated-article-hero-images/tasks/T003-add-openai-image-provider.yaml"
+    status: "implemented"
+    owner: "implementation"
+    actor: "backend_developer"
+    assigned_role: "backend_developer"
+    depends_on: ["T001"]
+    blocks: ["T004", "T007"]
+    parallel_group: "B"
+    estimated_risk: "high"
+    write_scope:
+      mode: "bounded"
+      allowed_paths:
+        - "packages/ai/src/"
+        - "packages/ai/test/"
+        - "packages/ai/package.json"
+        - ".env.example"
+        - "docs/infrastructure/secrets.md"
+        - "docs/milestones/m5-5-generated-article-hero-images/handoffs/"
+      forbidden_paths:
+        - "apps/web/"
+        - "apps/worker/src/"
+        - "packages/db/src/schema/"
+        - "supabase/"
+
+  - id: "T004"
+    title: "Generate/regenerate public hero image"
+    type: "backend"
+    target_milestone: "m5-5-generated-article-hero-images"
+    file: "docs/milestones/m5-5-generated-article-hero-images/tasks/T004-generate-and-store-hero-image-candidate.yaml"
+    status: "implemented"
+    owner: "implementation"
+    actor: "backend_developer"
+    assigned_role: "backend_developer"
+    depends_on: ["T002", "T003"]
+    blocks: ["T005", "T006", "T007"]
+    parallel_group: "C"
+    estimated_risk: "high"
+    write_scope:
+      mode: "bounded"
+      allowed_paths:
+        - "apps/worker/src/"
+        - "apps/worker/test/"
+        - "apps/worker/package.json"
+        - "docs/milestones/m5-5-generated-article-hero-images/handoffs/"
+      forbidden_paths:
+        - "apps/web/"
+        - "packages/db/src/schema/"
+        - "supabase/migrations/"
+
+  - id: "T005"
+    title: "Remove image approval gate and fix publish behavior"
+    type: "backend"
+    target_milestone: "m5-5-generated-article-hero-images"
+    file: "docs/milestones/m5-5-generated-article-hero-images/tasks/T005-review-approval-and-publish-gate.yaml"
+    status: "implemented"
+    owner: "implementation"
+    actor: "backend_developer"
+    assigned_role: "backend_developer"
+    depends_on: ["T002", "T004"]
+    blocks: ["T006", "T007"]
+    parallel_group: "D"
+    estimated_risk: "high"
+    write_scope:
+      mode: "bounded"
+      allowed_paths:
+        - "apps/worker/src/article-review/"
+        - "apps/worker/src/article-publishing/"
+        - "apps/worker/src/"
+        - "apps/worker/test/"
+        - "apps/worker/package.json"
+        - "docs/milestones/m5-5-generated-article-hero-images/handoffs/"
+      forbidden_paths:
+        - "apps/web/"
+        - "packages/db/src/schema/"
+        - "supabase/migrations/"
+
+  - id: "T006"
+    title: "Editorial review image UI regeneration flow"
+    type: "frontend"
+    target_milestone: "m5-5-generated-article-hero-images"
+    file: "docs/milestones/m5-5-generated-article-hero-images/tasks/T006-editorial-review-image-ui.yaml"
+    status: "implemented"
+    owner: "implementation"
+    actor: "frontend_developer"
+    assigned_role: "frontend_developer"
+    depends_on: ["T002", "T005"]
+    blocks: ["T007"]
+    parallel_group: "E"
+    estimated_risk: "medium"
+    write_scope:
+      mode: "bounded"
+      allowed_paths:
+        - "apps/web/src/app/(internal)/internal/editorial/review/"
+        - "apps/web/src/lib/article-review.ts"
+        - "apps/web/src/components/public/article-detail-content.tsx"
+        - "apps/web/src/lib/public-article-detail.ts"
+        - "apps/web/test/"
+        - "apps/web/package.json"
+        - "docs/milestones/m5-5-generated-article-hero-images/handoffs/"
+      forbidden_paths:
+        - "apps/worker/src/"
+        - "packages/db/src/schema/"
+        - "supabase/migrations/"
+
+  - id: "T007"
+    title: "QA generated hero images"
+    type: "qa"
+    target_milestone: "m5-5-generated-article-hero-images"
+    file: "docs/milestones/m5-5-generated-article-hero-images/tasks/T007-qa-generated-hero-images.yaml"
+    status: "qa_passed"
+    owner: "qa"
+    actor: "qa_reviewer"
+    assigned_role: "qa_reviewer"
+    depends_on: ["T004", "T005", "T006"]
+    blocks: ["T008"]
+    parallel_group: "F"
+    estimated_risk: "high"
+    write_scope:
+      mode: "docs-only"
+      allowed_paths:
+        - "docs/milestones/m5-5-generated-article-hero-images/qa-report.md"
+        - "docs/milestones/m5-5-generated-article-hero-images/handoffs/"
+      forbidden_paths:
+        - "apps/"
+        - "packages/"
+        - "supabase/"
+
+  - id: "T008"
+    title: "Consolidate docs and closeout"
+    type: "knowledge_consolidation"
+    target_milestone: "m5-5-generated-article-hero-images"
+    file: "docs/milestones/m5-5-generated-article-hero-images/tasks/T008-consolidate-docs-and-closeout.yaml"
+    status: "implemented"
+    owner: "docs"
+    actor: "knowledge_curator"
+    assigned_role: "knowledge_curator"
+    depends_on: ["T007"]
+    blocks: []
+    parallel_group: "G"
+    estimated_risk: "medium"
+    write_scope:
+      mode: "docs-only"
+      allowed_paths:
+        - "docs/PROJECT_STATE.md"
+        - "docs/database/schema.md"
+        - "docs/frontend/routes.md"
+        - "docs/infrastructure/secrets.md"
+        - "docs/qa/test-strategy.md"
+        - "docs/milestones/m5-5-generated-article-hero-images/"
+      forbidden_paths:
+        - "apps/"
+        - "packages/"
+        - "supabase/"
+
+execution_order:
+  - phase: "contract"
+    tasks: ["T001"]
+  - phase: "parallel-foundation"
+    tasks: ["T002", "T003"]
+  - phase: "public-image-generation"
+    tasks: ["T004"]
+  - phase: "publish-gate-cleanup"
+    tasks: ["T005"]
+  - phase: "frontend"
+    tasks: ["T006"]
+  - phase: "qa"
+    tasks: ["T007"]
+  - phase: "knowledge_consolidation"
+    tasks: ["T008"]
+
+qa:
+  qa_report_file: "docs/milestones/m5-5-generated-article-hero-images/qa-report.md"
+  require_qa_after_each_implementation_task: true
+  require_final_milestone_qa: true
+
+handoffs:
+  directory: "docs/milestones/m5-5-generated-article-hero-images/handoffs"
+  required_for_roles:
+    - architect
+    - data_agent
+    - backend_developer
+    - frontend_developer
+    - qa_reviewer
+    - knowledge_curator
+
+closeout:
+  file: "docs/milestones/m5-5-generated-article-hero-images/closeout.md"
+  required: true

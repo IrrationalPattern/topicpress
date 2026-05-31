@@ -2,6 +2,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 
 import {
   articleLocalizations,
+  articleHeroImageCandidates,
   articleSources,
   articles,
   categories,
@@ -14,6 +15,7 @@ import {
 import type { TopicpressDatabase } from "../database.js";
 import type {
   ArticleReviewArticleData,
+  ArticleReviewHeroImageCandidateRow,
   ArticleReviewExecutor,
   ArticleReviewSourceLineage,
   ArticleReviewStore,
@@ -97,6 +99,7 @@ async function findArticleReviewById(
     listArticleIdsBySlug(db, base.article.slug),
     listArticleIdsByStoryClusterId(db, base.article.storyClusterId),
   ]);
+  const heroImageCandidate = await findHeroImageCandidateByArticleId(db, articleId);
 
   return {
     article: base.article,
@@ -104,6 +107,7 @@ async function findArticleReviewById(
     storyCluster: base.storyCluster,
     localizations,
     sources: lineage,
+    heroImageCandidate,
     articleIdsWithSameSlug: slugMatches,
     articleIdsWithSameStoryCluster: clusterMatches,
   };
@@ -207,6 +211,19 @@ async function updateArticleStatus(
   return rows[0] ?? null;
 }
 
+async function findHeroImageCandidateByArticleId(
+  db: ArticleReviewExecutor,
+  articleId: string,
+): Promise<ArticleReviewHeroImageCandidateRow | null> {
+  const rows = await db
+    .select(candidateSelection())
+    .from(articleHeroImageCandidates)
+    .where(eq(articleHeroImageCandidates.articleId, articleId))
+    .limit(1);
+
+  return rows[0] ?? null;
+}
+
 function articleSelection() {
   return {
     id: articles.id,
@@ -214,11 +231,38 @@ function articleSelection() {
     categoryId: articles.categoryId,
     slug: articles.slug,
     status: articles.status,
+    heroImageUrl: articles.heroImageUrl,
     primaryLocale: articles.primaryLocale,
     publishedAt: articles.publishedAt,
     reviewNotes: articles.reviewNotes,
     generationMetadata: articles.generationMetadata,
     createdAt: articles.createdAt,
     updatedAt: articles.updatedAt,
+  };
+}
+
+function candidateSelection() {
+  return {
+    id: articleHeroImageCandidates.id,
+    articleId: articleHeroImageCandidates.articleId,
+    status: articleHeroImageCandidates.status,
+    provider: articleHeroImageCandidates.provider,
+    model: articleHeroImageCandidates.model,
+    prompt: articleHeroImageCandidates.prompt,
+    promptHash: articleHeroImageCandidates.promptHash,
+    stylePolicy: articleHeroImageCandidates.stylePolicy,
+    storageBucket: articleHeroImageCandidates.storageBucket,
+    storagePath: articleHeroImageCandidates.storagePath,
+    contentType: articleHeroImageCandidates.contentType,
+    width: articleHeroImageCandidates.width,
+    height: articleHeroImageCandidates.height,
+    sizeBytes: articleHeroImageCandidates.sizeBytes,
+    publicUrl: articleHeroImageCandidates.publicUrl,
+    reviewNotes: articleHeroImageCandidates.reviewNotes,
+    generationMetadata: articleHeroImageCandidates.generationMetadata,
+    generatedAt: articleHeroImageCandidates.generatedAt,
+    reviewedAt: articleHeroImageCandidates.reviewedAt,
+    createdAt: articleHeroImageCandidates.createdAt,
+    updatedAt: articleHeroImageCandidates.updatedAt,
   };
 }

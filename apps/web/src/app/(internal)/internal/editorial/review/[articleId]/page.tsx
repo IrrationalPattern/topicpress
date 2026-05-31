@@ -10,9 +10,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 import { getArticleReview, type ArticleReviewArticle } from "@/lib/article-review";
+import { HeroImageCandidateActionsPanel } from "./hero-image-candidate-actions-panel";
+import { HeroImageCandidateSummary } from "./hero-image-candidate-summary";
 import { ReviewActionsPanel } from "./review-actions-panel";
 
 export const dynamic = "force-dynamic";
+
+const staleHeroImageApprovalIssueCodes = new Set([
+  "missing_approved_hero_image",
+  "unapproved_hero_image_candidate",
+  "missing_approved_hero_image_public_url",
+  "hero_image_url_mismatch",
+]);
 
 export async function generateMetadata({ params }: { params: Promise<{ articleId: string }> }) {
   const { articleId } = await params;
@@ -43,6 +52,13 @@ export default async function ArticleReviewDetailPage({
 
 function ArticleReviewDetail({ article }: { article: ArticleReviewArticle }) {
   const localization = article.primaryLocalization;
+  const visibleValidationIssues = article.validation.issues.filter(
+    (issue) => !staleHeroImageApprovalIssueCodes.has(issue.code),
+  );
+  const visibleValidationOk = visibleValidationIssues.length === 0;
+  const hasCurrentGeneratedImage =
+    normalizeOptionalText(article.heroImageCandidate?.publicUrl) !== undefined ||
+    normalizeOptionalText(article.heroImageUrl) !== undefined;
 
   return (
     <WorkspaceShell>
@@ -138,8 +154,8 @@ function ArticleReviewDetail({ article }: { article: ArticleReviewArticle }) {
             <div className="flex flex-wrap gap-1.5">
               <ArticleStatusBadge status={article.status} />
               <ValidationBadge
-                ok={article.validation.ok}
-                issueCount={article.validation.issues.length}
+                ok={visibleValidationOk}
+                issueCount={visibleValidationIssues.length}
               />
             </div>
             <div className="grid gap-3 md:grid-cols-2">
@@ -156,6 +172,15 @@ function ArticleReviewDetail({ article }: { article: ArticleReviewArticle }) {
             <ReviewActionsPanel articleId={article.id} status={article.status} />
           </Panel>
 
+          <Panel title="Hero image">
+            <HeroImageCandidateSummary article={article} />
+            <HeroImageCandidateActionsPanel
+              articleId={article.id}
+              articleStatus={article.status}
+              hasCurrentImage={hasCurrentGeneratedImage}
+            />
+          </Panel>
+
           <Panel title="Category and cluster">
             <div className="grid gap-3 md:grid-cols-2">
               <Field label="Category" value={article.category.name} />
@@ -168,13 +193,13 @@ function ArticleReviewDetail({ article }: { article: ArticleReviewArticle }) {
           </Panel>
 
           <Panel title="Validation state">
-            {article.validation.ok ? (
+            {visibleValidationOk ? (
               <p className="text-muted-foreground">
                 This review draft is eligible for ready status.
               </p>
             ) : (
               <ul className="list-disc pl-5">
-                {article.validation.issues.map((issue) => (
+                {visibleValidationIssues.map((issue) => (
                   <li key={`${issue.code}:${issue.message}`}>
                     <strong>{issue.code}</strong>: {issue.message}
                   </li>
@@ -221,4 +246,10 @@ function formatDateTime(value: Date | null): string {
 
 function formatJsonSummary(value: ArticleReviewArticle["generationMetadata"]): string {
   return JSON.stringify(value, null, 2);
+}
+
+function normalizeOptionalText(value: string | null | undefined): string | undefined {
+  const trimmed = value?.trim();
+
+  return trimmed === undefined || trimmed.length === 0 ? undefined : trimmed;
 }

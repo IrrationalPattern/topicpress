@@ -179,7 +179,7 @@ function SubmitButton({
   );
 }
 
-function ActionFeedback({ feedback }: { readonly feedback: ReviewActionFeedback }) {
+export function ActionFeedback({ feedback }: { readonly feedback: ReviewActionFeedback }) {
   if (feedback.refreshToken === 0) {
     return null;
   }

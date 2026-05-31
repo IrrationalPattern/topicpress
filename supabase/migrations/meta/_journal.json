@@ -8,6 +8,13 @@
       "when": 1777246925052,
       "tag": "0000_youthful_sentinels",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779912767976,
+      "tag": "0001_mysterious_jean_grey",
+      "breakpoints": true
     }
   ]
 }

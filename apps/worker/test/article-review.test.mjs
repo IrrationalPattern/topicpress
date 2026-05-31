@@ -21,6 +21,8 @@ test("lists reviewable articles with editorial context and readiness state", asy
   assert.equal(articles[0].primaryLocalization.title, "Review gated publishing");
   assert.equal(articles[0].sources.length, 1);
   assert.equal(articles[0].sources[0].sourceItem.externalUrl, "https://example.test/story");
+  assert.equal(articles[0].heroImageCandidate.status, "generated");
+  assert.equal(articles[0].heroImageCandidate.privatePreviewAvailable, false);
   assert.equal(articles[0].validation.ok, true);
 });
 
@@ -96,6 +98,42 @@ test("moves a complete review article to ready without changing notes when none 
   assert.equal(result.article.reviewNotes, null);
   assert.equal(store.articles[0].status, "ready");
   assert.equal(store.articles[0].updatedAt, transitionTime);
+  assert.equal(store.updateCalls, 1);
+});
+
+test("allows review to ready when no generated hero image exists", async () => {
+  const store = createMemoryArticleReviewStore({
+    articles: [article({ heroImageUrl: null })],
+    heroImageCandidates: [],
+  });
+
+  const result = await transitionArticleReviewStatusWithStore(
+    store,
+    { articleId: "article-1", toStatus: "ready" },
+    { now: transitionTime },
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.article.status, "ready");
+  assert.equal(store.articles[0].status, "ready");
+  assert.equal(store.updateCalls, 1);
+});
+
+test("allows review to ready when generated image metadata is failed", async () => {
+  const store = createMemoryArticleReviewStore({
+    articles: [article({ heroImageUrl: null })],
+    heroImageCandidates: [heroImageCandidate({ status: "failed", publicUrl: null })],
+  });
+
+  const result = await transitionArticleReviewStatusWithStore(
+    store,
+    { articleId: "article-1", toStatus: "ready" },
+    { now: transitionTime },
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.article.status, "ready");
+  assert.equal(store.articles[0].status, "ready");
   assert.equal(store.updateCalls, 1);
 });
 
@@ -244,12 +282,29 @@ test("reports persistence failure when the conditional status update loses the r
   assert.equal(store.updateCalls, 1);
 });
 
+test("does not leak storage identifiers through article review DTOs", async () => {
+  const store = createMemoryArticleReviewStore({
+    articles: [article({ heroImageUrl: null })],
+    heroImageCandidates: [heroImageCandidate({ status: "generated" })],
+  });
+
+  const loaded = await loadArticleReviewWithStore(store, "article-1");
+
+  assert.equal(loaded.ok, true);
+  assert.equal(loaded.article.heroImageCandidate.privatePreviewAvailable, false);
+  assert.equal(JSON.stringify(loaded.article).includes("article-hero-images"), false);
+  assert.equal(JSON.stringify(loaded.article).includes("storagePath"), false);
+});
+
 function createMemoryArticleReviewStore(overrides = {}) {
   const categories = (overrides.categories ?? [category()]).map((row) => ({ ...row }));
   const storyClusters = (overrides.storyClusters ?? [storyCluster()]).map((row) => ({ ...row }));
   const articles = (overrides.articles ?? [article()]).map((row) => ({ ...row }));
   const localizations = (overrides.localizations ?? [localization()]).map((row) => ({ ...row }));
   const sourceLineage = (overrides.sourceLineage ?? [lineage()]).map((row) => ({ ...row }));
+  const heroImageCandidates = (overrides.heroImageCandidates ?? [heroImageCandidate()]).map((row) => ({
+    ...row,
+  }));
   let updateCalls = 0;
 
   const tx = {
@@ -285,6 +340,7 @@ function createMemoryArticleReviewStore(overrides = {}) {
         sources: sourceLineage
           .filter((row) => row.articleId === articleId)
           .map(({ articleId: _articleId, ...row }) => ({ ...row })),
+        heroImageCandidate: heroImageCandidates.find((row) => row.articleId === articleId) ?? null,
         articleIdsWithSameSlug: articles
           .filter((row) => row.slug === currentArticle.slug)
           .map((row) => row.id),
@@ -325,6 +381,7 @@ function createMemoryArticleReviewStore(overrides = {}) {
     articles,
     localizations,
     sourceLineage,
+    heroImageCandidates,
     get updateCalls() {
       return updateCalls;
     },
@@ -339,6 +396,7 @@ function article(overrides = {}) {
     categoryId: "category-news",
     slug: "review-gated-publishing",
     status: "review",
+    heroImageUrl: "https://cdn.example.test/articles/article-1/candidate-1.webp",
     primaryLocale: "en-GB",
     publishedAt: null,
     reviewNotes: null,
@@ -348,6 +406,33 @@ function article(overrides = {}) {
       mode: "fixture",
       locale: "en-GB",
     },
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
+
+function heroImageCandidate(overrides = {}) {
+  return {
+    id: "candidate-1",
+    articleId: "article-1",
+    status: "generated",
+    provider: "openai",
+    model: "fixture-image-model",
+    prompt: "System:\nCreate one review-gated hero image candidate.",
+    promptHash: "fixture-prompt-hash",
+    stylePolicy: "editorial_illustration",
+    storageBucket: "article-hero-images",
+    storagePath: "articles/article-1/candidate-1.webp",
+    contentType: "image/webp",
+    width: 1536,
+    height: 1024,
+    sizeBytes: 5,
+    publicUrl: "https://cdn.example.test/articles/article-1/candidate-1.webp",
+    reviewNotes: "Approved.",
+    generationMetadata: {},
+    generatedAt: now,
+    reviewedAt: now,
     createdAt: now,
     updatedAt: now,
     ...overrides,

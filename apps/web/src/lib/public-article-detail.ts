@@ -7,15 +7,32 @@ import { fileURLToPath } from "node:url";
 import * as schema from "@topicpress/db";
 import {
   getPublicArticleDetail as getWorkerPublicArticleDetail,
-  type PublicArticleDetail,
+  type PublicArticleDetail as WorkerPublicArticleDetail,
   type PublicArticleDetailResult,
 } from "@topicpress/worker";
+import { and, eq } from "drizzle-orm";
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 import type { AppLocale } from "@/i18n/routing";
 
 type TopicpressWebDatabase = PostgresJsDatabase<typeof schema>;
+
+export interface PublicArticleHeroImageDisclosure {
+  readonly kind: "ai_generated";
+  readonly label: "AI-generated illustration";
+}
+
+export type PublicArticleDetail = WorkerPublicArticleDetail & {
+  readonly heroImageDisclosure?: PublicArticleHeroImageDisclosure;
+};
+
+export type WebPublicArticleDetailResult =
+  | {
+      readonly kind: "found";
+      readonly article: PublicArticleDetail;
+    }
+  | { readonly kind: "not_found" };
 
 interface DatabaseClient {
   readonly db: TopicpressWebDatabase;
@@ -25,17 +42,68 @@ interface DatabaseClient {
 export async function getPublicArticleDetail(
   locale: AppLocale,
   slug: string,
-): Promise<PublicArticleDetailResult> {
+): Promise<WebPublicArticleDetailResult> {
   const client = createDatabaseClient();
 
   try {
-    return await getWorkerPublicArticleDetail(client.db, { locale, slug });
+    const result = await getWorkerPublicArticleDetail(client.db, { locale, slug });
+
+    if (result.kind === "not_found") {
+      return result;
+    }
+
+    return {
+      kind: "found",
+      article: await addHeroImageDisclosure(client.db, result.article),
+    };
   } finally {
     await client.close();
   }
 }
 
-export type { PublicArticleDetail, PublicArticleDetailResult };
+export type { PublicArticleDetailResult };
+
+async function addHeroImageDisclosure(
+  db: TopicpressWebDatabase,
+  article: WorkerPublicArticleDetail,
+): Promise<PublicArticleDetail> {
+  const heroImageUrl = normalizeOptionalText(article.heroImageUrl);
+
+  if (heroImageUrl === undefined) {
+    return article;
+  }
+
+  const generatedHeroImageRows = await db
+    .select({
+      status: schema.articleHeroImageCandidates.status,
+      stylePolicy: schema.articleHeroImageCandidates.stylePolicy,
+    })
+    .from(schema.articleHeroImageCandidates)
+    .where(
+      and(
+        eq(schema.articleHeroImageCandidates.articleId, article.id),
+        eq(schema.articleHeroImageCandidates.publicUrl, heroImageUrl),
+      ),
+    )
+    .limit(1);
+  const generatedHeroImage = generatedHeroImageRows[0];
+
+  if (
+    generatedHeroImage === undefined ||
+    generatedHeroImage.stylePolicy !== "editorial_illustration" ||
+    generatedHeroImage.status !== "generated"
+  ) {
+    return article;
+  }
+
+  return {
+    ...article,
+    heroImageDisclosure: {
+      kind: "ai_generated",
+      label: "AI-generated illustration",
+    },
+  };
+}
 
 function createDatabaseClient(databaseUrl = resolveDatabaseUrl()): DatabaseClient {
   const client = postgres(databaseUrl, { max: 1 });
@@ -44,6 +112,12 @@ function createDatabaseClient(databaseUrl = resolveDatabaseUrl()): DatabaseClien
     db: drizzle(client, { schema }),
     close: () => client.end(),
   };
+}
+
+function normalizeOptionalText(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+
+  return trimmed === undefined || trimmed.length === 0 ? undefined : trimmed;
 }
 
 function resolveDatabaseUrl(): string {

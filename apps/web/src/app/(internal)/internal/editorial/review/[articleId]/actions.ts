@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import {
+  generateOrRegenerateEditorialArticleHeroImage,
   publishEditorialArticle,
   transitionEditorialArticleReviewStatus,
 } from "@/lib/article-review";
@@ -13,6 +14,12 @@ import type {
 } from "./review-action-state";
 
 const reviewListPath = "/internal/editorial/review";
+const staleHeroImageApprovalIssueCodes = new Set([
+  "missing_approved_hero_image",
+  "unapproved_hero_image_candidate",
+  "missing_approved_hero_image_public_url",
+  "hero_image_url_mismatch",
+]);
 
 export async function reviewArticleAction(
   previousState: ReviewActionFeedback,
@@ -40,6 +47,8 @@ export async function reviewArticleAction(
       return transitionArticle(refreshToken, articleId, "failed", readFormText(formData, "reason"));
     case "publish":
       return publishArticle(refreshToken, articleId);
+    case "generate_hero_image":
+      return generateHeroImage(refreshToken, articleId);
     case "hold":
       return {
         ok: true,
@@ -61,6 +70,45 @@ export async function reviewArticleAction(
         "The submitted review action is not recognized.",
       );
   }
+}
+
+async function generateHeroImage(
+  refreshToken: number,
+  articleId: string,
+): Promise<ReviewActionFeedback> {
+  const result = await generateOrRegenerateEditorialArticleHeroImage({ articleId });
+
+  if (!result.ok) {
+    return {
+      ok: false,
+      title: titleForCode(result.error.code),
+      message: result.error.message,
+      code: result.error.code,
+      issues: [],
+      pipelineRunId: result.pipelineRunId,
+      pipelineRunStatus: "failed",
+      outcome: null,
+      refreshToken,
+      shouldRefresh: false,
+    };
+  }
+
+  revalidateArticlePaths(articleId);
+
+  const outcome = result.outcome;
+
+  return {
+    ok: true,
+    title: outcome === "regenerated" ? "Hero image regenerated" : "Hero image generated",
+    message: "The generated hero image request completed and the review detail is ready to refresh.",
+    code: null,
+    issues: [],
+    pipelineRunId: result.pipelineRunId,
+    pipelineRunStatus: "succeeded",
+    outcome,
+    refreshToken,
+    shouldRefresh: true,
+  };
 }
 
 async function transitionArticle(
@@ -185,7 +233,9 @@ function readFormText(formData: FormData, key: string): string | null {
 function toActionIssues(
   issues: readonly { readonly code: string; readonly message: string }[],
 ): readonly ReviewActionIssue[] {
-  return issues.map((issue) => ({ code: issue.code, message: issue.message }));
+  return issues
+    .filter((issue) => !staleHeroImageApprovalIssueCodes.has(issue.code))
+    .map((issue) => ({ code: issue.code, message: issue.message }));
 }
 
 function titleForCode(code: string): string {
@@ -200,6 +250,14 @@ function titleForCode(code: string): string {
       return "Reason required";
     case "persistence_failed":
       return "Persistence failure";
+    case "ineligible_article":
+      return "Hero image unavailable";
+    case "missing_primary_localization":
+      return "Missing localization";
+    case "provider_failed":
+      return "Image provider failure";
+    case "storage_failed":
+      return "Storage failure";
     default:
       return "Action failed";
   }

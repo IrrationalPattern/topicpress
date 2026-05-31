@@ -1,4 +1,5 @@
 import type {
+  ArticleHeroImageCandidateStatus,
   ArticleLocalization,
   ArticleStatus,
   Category,
@@ -98,6 +99,7 @@ export interface ArticleReviewArticle {
   readonly categoryId: string;
   readonly slug: string;
   readonly status: ArticleStatus;
+  readonly heroImageUrl: string | null;
   readonly primaryLocale: string;
   readonly publishedAt: Date | null;
   readonly reviewNotes: string | null;
@@ -109,7 +111,28 @@ export interface ArticleReviewArticle {
   readonly primaryLocalization: ArticleReviewLocalization | null;
   readonly localizations: readonly ArticleReviewLocalization[];
   readonly sources: readonly ArticleReviewSourceLineage[];
+  readonly heroImageCandidate: ArticleReviewHeroImageCandidate | null;
   readonly validation: ArticleReviewValidationResult;
+}
+
+export interface ArticleReviewHeroImageCandidate {
+  readonly id: string;
+  readonly status: ArticleHeroImageCandidateStatus;
+  readonly provider: string;
+  readonly model: string;
+  readonly prompt: string;
+  readonly promptHash: string;
+  readonly stylePolicy: string;
+  readonly contentType: string | null;
+  readonly width: number | null;
+  readonly height: number | null;
+  readonly sizeBytes: number | null;
+  readonly publicUrl: string | null;
+  readonly reviewNotes: string | null;
+  readonly generationMetadata: JsonValue;
+  readonly generatedAt: Date;
+  readonly reviewedAt: Date | null;
+  readonly privatePreviewAvailable: boolean;
 }
 
 export type ArticleReviewCategory = Pick<
@@ -170,6 +193,7 @@ export interface ArticleReviewArticleData {
   readonly storyCluster: ArticleReviewStoryCluster;
   readonly localizations: readonly ArticleReviewLocalization[];
   readonly sources: readonly ArticleReviewSourceLineage[];
+  readonly heroImageCandidate: ArticleReviewHeroImageCandidateRow | null;
   readonly articleIdsWithSameSlug: readonly string[];
   readonly articleIdsWithSameStoryCluster: readonly string[];
 }
@@ -180,6 +204,7 @@ export interface ArticleReviewArticleRow {
   readonly categoryId: string;
   readonly slug: string;
   readonly status: ArticleStatus;
+  readonly heroImageUrl: string | null;
   readonly primaryLocale: string;
   readonly publishedAt: Date | null;
   readonly reviewNotes: string | null;
@@ -194,6 +219,30 @@ export interface UpdateArticleReviewStatusInput {
   readonly toStatus: ArticleStatus;
   readonly updatedAt: Date;
   readonly reviewNotes?: string;
+}
+
+export interface ArticleReviewHeroImageCandidateRow {
+  readonly id: string;
+  readonly articleId: string;
+  readonly status: ArticleHeroImageCandidateStatus;
+  readonly provider: string;
+  readonly model: string;
+  readonly prompt: string;
+  readonly promptHash: string;
+  readonly stylePolicy: string;
+  readonly storageBucket: string;
+  readonly storagePath: string | null;
+  readonly contentType: string | null;
+  readonly width: number | null;
+  readonly height: number | null;
+  readonly sizeBytes: number | null;
+  readonly publicUrl: string | null;
+  readonly reviewNotes: string | null;
+  readonly generationMetadata: unknown;
+  readonly generatedAt: Date;
+  readonly reviewedAt: Date | null;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
 }
 
 export type ArticleReviewExecutor = Pick<TopicpressDatabase, "insert" | "select" | "update">;

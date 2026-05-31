@@ -1,0 +1,198 @@
+id: "T001"
+title: "Finalize generated image contract"
+type: "contract"
+milestone: "m5-5-generated-article-hero-images"
+target_milestone: "m5-5-generated-article-hero-images"
+status: "implemented"
+owner: "orchestrator"
+actor: "architect"
+assigned_role: "architect"
+priority: "high"
+risk: "high"
+
+related_specs:
+  - "docs/PROJECT_STATE.md"
+  - "docs/architecture/boundaries.md"
+  - "docs/architecture/adr/ADR-007-generated-article-hero-images.md"
+  - "docs/database/schema.md"
+  - "docs/frontend/routes.md"
+  - "docs/infrastructure/secrets.md"
+  - "docs/qa/test-strategy.md"
+  - "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+
+related_issues:
+  - "root-web-build-hangs"
+
+depends_on: []
+blocks:
+  - "T002"
+  - "T003"
+  - "T004"
+  - "T005"
+  - "T006"
+parallel_group: "A"
+
+parallelization:
+  can_run_in_parallel: false
+  parallel_safety_notes:
+    - "This task defines contracts consumed by data, backend, and frontend tasks."
+  conflict_check_required: true
+  conflict_check_fields:
+    - "depends_on"
+    - "blocks"
+    - "write_scope.allowed_paths"
+    - "contracts.required_existing"
+    - "contracts.may_update"
+
+input_context:
+  must_read:
+    - "AGENTS.md"
+    - "docs/PROJECT_STATE.md"
+    - "docs/architecture/boundaries.md"
+    - "docs/database/schema.md"
+    - "docs/infrastructure/secrets.md"
+    - "docs/qa/test-strategy.md"
+    - "docs/frontend/routes.md"
+    - "docs/milestones/m5-4-sitemap-and-robots/plan.md"
+    - "docs/milestones/m5-4-sitemap-and-robots/task-graph.yaml"
+  should_read:
+    - "docs/architecture/adr/ADR-001-monorepo-split-runtime.md"
+    - "docs/architecture/adr/ADR-005-manual-review-before-publication.md"
+    - "docs/architecture/adr/ADR-006-database-backed-worker-execution.md"
+    - "packages/ai/src/openai-provider.ts"
+    - "apps/worker/src/article-review/"
+    - "apps/web/src/components/public/article-detail-content.tsx"
+  relevant_docs:
+    - "https://developers.openai.com/api/docs/guides/image-generation"
+    - "https://developers.openai.com/api/reference/resources/images"
+    - "https://developers.openai.com/api/docs/models/gpt-image-1.5"
+  relevant_files: []
+  do_not_read_initially: []
+
+write_scope:
+  mode: "docs-only"
+  allowed_paths:
+    - "docs/milestones/m5-5-generated-article-hero-images/"
+    - "docs/architecture/adr/ADR-007-generated-article-hero-images.md"
+    - "docs/PROJECT_STATE.md"
+  forbidden_paths:
+    - "apps/"
+    - "packages/"
+    - "supabase/"
+  notes:
+    - "Do not edit production code in this task."
+
+scope:
+  include:
+    - "Create M5.5 milestone plan, task graph, task YAML files, and T001 handoff."
+    - "Create ADR-007 for generated article hero images."
+    - "Record OpenAI Image API planning evidence and model verification requirements."
+    - "Define data, storage, provider, review, publish, frontend, QA, and docs contracts."
+    - "Update project state only enough to register the planned milestone and ADR."
+  exclude:
+    - "Production code implementation."
+    - "Schema, migration, storage bucket, package, or app code edits."
+    - "Live OpenAI calls."
+    - "QA execution beyond docs diff checks."
+
+expected_changes:
+  code:
+    required: false
+    paths: []
+  tests:
+    required: false
+    paths: []
+  docs:
+    required: true
+    paths:
+      - "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+      - "docs/milestones/m5-5-generated-article-hero-images/task-graph.yaml"
+      - "docs/milestones/m5-5-generated-article-hero-images/tasks/"
+      - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T001-finalize-generated-image-contract-handoff.md"
+      - "docs/architecture/adr/ADR-007-generated-article-hero-images.md"
+      - "docs/PROJECT_STATE.md"
+  config:
+    required: false
+    paths: []
+
+contracts:
+  required_existing:
+    - "AGENTS.md"
+    - "docs/PROJECT_STATE.md"
+  may_update:
+    - "docs/milestones/m5-5-generated-article-hero-images/"
+    - "docs/architecture/adr/ADR-007-generated-article-hero-images.md"
+    - "docs/PROJECT_STATE.md"
+  must_not_update:
+    - "apps/"
+    - "packages/"
+    - "supabase/"
+
+acceptance_criteria:
+  - "Milestone plan includes goal, non-goals, current state, desired state, architecture impact, contracts, task breakdown, dependencies, parallelization plan, risks, validation commands, QA gates, and acceptance criteria."
+  - "Task graph includes owners, statuses, dependencies, blockers, write scopes, validation expectations, and sequencing."
+  - "All eight task YAML files exist and are concrete enough for implementation agents."
+  - "T001 is marked implemented and has a handoff."
+  - "T002 and T003 are ready; downstream tasks are pending."
+  - "ADR-007 records the OpenAI-only, one-current-image, review-time regeneration, single-public-bucket architecture."
+  - "OpenAI docs evidence is paraphrased with official URLs and T003 is required to verify/pin `TOPICPRESS_OPENAI_IMAGE_MODEL` at implementation time."
+  - "No app, package, database schema, migration, or Supabase implementation files are edited."
+  - "Docs diff checks pass or failures are recorded in the handoff."
+
+resolved_contract:
+  provider:
+    decision: "OpenAI only for MVP; no production fallback provider."
+    model_policy: "T003 must verify official docs and account availability, then pin TOPICPRESS_OPENAI_IMAGE_MODEL, defaulting to gpt-image-1.5 if available."
+  image_count:
+    decision: "At most one current generated hero image per article."
+  review_gate:
+    decision: "Generated images are reviewed as part of article review; editors intentionally regenerate when needed."
+  style:
+    decision: "Editorial illustration, not fake photojournalism."
+  storage:
+    decision: "Single public Supabase Storage bucket: article-hero-images."
+  public_pointer:
+    decision: "articles.hero_image_url remains the public generated image pointer."
+  data_model:
+    decision: "Existing candidate table may be repurposed for one current-image metadata row per article."
+
+validation:
+  commands:
+    - "git diff --check -- docs"
+    - "rg --line-number \"[ \\t]+$\" docs/milestones/m5-5-generated-article-hero-images docs/architecture/adr/ADR-007-generated-article-hero-images.md docs/PROJECT_STATE.md"
+  package_commands: []
+  manual_checks:
+    - "Review created task graph and task YAML files for dependency consistency."
+    - "Review changed docs to confirm no code/package/db files were edited."
+
+handoff:
+  required: true
+  file: "docs/milestones/m5-5-generated-article-hero-images/handoffs/T001-finalize-generated-image-contract-handoff.md"
+
+qa:
+  required: true
+  reviewer_role: "qa_reviewer"
+  focus_areas:
+    - "Planning completeness."
+    - "Architecture boundary consistency."
+    - "OpenAI docs evidence and model verification requirement."
+    - "Docs-only scope."
+
+failure_handling:
+  if_blocked:
+    - "Set status to blocked."
+    - "Document unresolved product, provider, storage, or review-gate question."
+  if_qa_fails:
+    - "Set status to qa_failed."
+    - "Record QA finding IDs and fix planning artifacts before implementation starts."
+
+completion:
+  required_outputs:
+    - "Milestone plan"
+    - "Task graph"
+    - "Task YAML files"
+    - "ADR-007"
+    - "T001 handoff"
+    - "Docs diff evidence"
+  status_after_agent_finishes: "implemented"
+  status_after_qa_passes: "qa_passed"

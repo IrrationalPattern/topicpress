@@ -1,6 +1,6 @@
 # Topicpress Test Strategy
 
-Updated: 2026-05-27
+Updated: 2026-06-01
 
 ## Current Strategy
 
@@ -15,6 +15,7 @@ The current public rendering scope is:
 - `/robots.txt` returns configured robots directives with one canonical sitemap pointer.
 - `/sitemap.xml` returns canonical absolute URLs for supported locale homepages, active category URLs, and public article detail URLs.
 - `/internal/editorial/review` remains the internal review surface.
+- Generated article hero images are generated/regenerated through explicit internal review actions, stored in public `article-hero-images`, surfaced through `articles.hero_image_url`, and disclosed on public article pages as `AI-generated illustration` when generated-image provenance matches the public hero URL.
 
 Deferred routes and surfaces remain outside focused M5 validation unless a later task explicitly changes scope:
 
@@ -126,6 +127,22 @@ For prompt, provider, structured output, or AI gating changes, include:
 pnpm --filter @topicpress/ai test
 ```
 
+For generated article hero image changes, use:
+
+```powershell
+pnpm --filter @topicpress/db build
+pnpm db:check
+pnpm db:migrate
+pnpm --filter @topicpress/ai test
+pnpm --filter @topicpress/worker test
+pnpm --filter @topicpress/worker build
+pnpm --filter @topicpress/web test
+pnpm --filter @topicpress/web lint
+pnpm --filter @topicpress/web typecheck
+```
+
+Generated hero image validation must verify the `article_hero_image_candidates` contract, public `article-hero-images` bucket, OpenAI live gate/model pinning, one current generated row per article, explicit generate/regenerate behavior, `articles.hero_image_url` updates, text-only publication allowance, public article rendering, `AI-generated illustration` disclosure, and absence of OpenAI keys, Supabase service-role keys, raw provider responses, prompt text, private storage paths, or signed URLs in public route output.
+
 For site config, locales, taxonomy, sources, theme tokens, or SEO defaults, include:
 
 ```powershell
@@ -176,6 +193,16 @@ Article detail smoke expectations:
 - Article detail pages expose article Open Graph metadata and language alternates only from backend-provided `alternateSlugs`.
 - Article body renders as escaped plain text paragraphs.
 - Article detail pages do not introduce source attribution, related articles, ads, comments, archive, sitemap, robots, right-rail modules, or structured article data.
+- When a published article has generated-image provenance matching `articles.hero_image_url`, the public route renders the hero image and `AI-generated illustration` disclosure.
+- Public article output must not expose image prompts, raw provider metadata, candidate status, storage paths, OpenAI keys, service-role keys, or `sk-` text.
+
+Generated hero image internal review smoke expectations:
+
+- `/internal/editorial/review/[articleId]` renders current generated image metadata and a deliberate Generate or Regenerate action.
+- Page load does not generate or regenerate an image.
+- Generation/regeneration is cost-bearing in live mode; avoid extra live clicks unless the task explicitly requires them and the operator accepts the cost.
+- Successful generation/regeneration writes `article-hero-images`, updates `articles.hero_image_url`, and records sanitized pipeline evidence.
+- Article ready/publish flow is not blocked solely because no generated hero image exists.
 
 Sitemap and robots smoke expectations:
 

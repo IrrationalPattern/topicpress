@@ -1,6 +1,11 @@
 import type { ArticleStatus } from "@topicpress/db";
 
 import type { TopicpressDatabase } from "../database.js";
+import {
+  sanitizeHeroImageCandidateErrorMessage,
+  sanitizeHeroImageCandidateJson,
+  sanitizeHeroImageCandidateReviewNote,
+} from "../hero-image-candidates/service-utils.js";
 import { createDrizzleArticleReviewStore } from "./drizzle-store.js";
 import type {
   ArticleReviewArticle,
@@ -170,6 +175,7 @@ export function buildArticleReview(data: ArticleReviewArticleData): ArticleRevie
     categoryId: data.article.categoryId,
     slug: data.article.slug,
     status: data.article.status,
+    heroImageUrl: data.article.heroImageUrl,
     primaryLocale: data.article.primaryLocale,
     publishedAt: data.article.publishedAt,
     reviewNotes: sanitizeReviewNote(data.article.reviewNotes ?? undefined) ?? null,
@@ -181,7 +187,36 @@ export function buildArticleReview(data: ArticleReviewArticleData): ArticleRevie
     primaryLocalization,
     localizations,
     sources: data.sources,
+    heroImageCandidate: sanitizeHeroImageCandidateForReview(data.heroImageCandidate),
     validation,
+  };
+}
+
+function sanitizeHeroImageCandidateForReview(
+  candidate: ArticleReviewArticleData["heroImageCandidate"],
+): ArticleReviewArticle["heroImageCandidate"] {
+  if (candidate === null) {
+    return null;
+  }
+
+  return {
+    id: candidate.id,
+    status: candidate.status,
+    provider: candidate.provider,
+    model: candidate.model,
+    prompt: sanitizeHeroImageCandidateErrorMessage(candidate.prompt),
+    promptHash: candidate.promptHash,
+    stylePolicy: candidate.stylePolicy,
+    contentType: candidate.contentType,
+    width: candidate.width,
+    height: candidate.height,
+    sizeBytes: candidate.sizeBytes,
+    publicUrl: candidate.publicUrl,
+    reviewNotes: sanitizeHeroImageCandidateReviewNote(candidate.reviewNotes ?? undefined),
+    generationMetadata: sanitizeJsonValue(sanitizeHeroImageCandidateJson(candidate.generationMetadata)),
+    generatedAt: candidate.generatedAt,
+    reviewedAt: candidate.reviewedAt,
+    privatePreviewAvailable: false,
   };
 }
 

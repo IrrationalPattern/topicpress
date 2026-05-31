@@ -1,6 +1,6 @@
 import { relations } from "drizzle-orm";
 
-import { articleLocalizations, articleSources, articles } from "./articles.js";
+import { articleHeroImageCandidates, articleLocalizations, articleSources, articles } from "./articles.js";
 import { sourceItems, storyClusterItems, storyClusters } from "./ingestion.js";
 import { pipelineRuns } from "./pipeline.js";
 import { sources } from "./sources.js";
@@ -61,6 +61,7 @@ export const articlesRelations = relations(articles, ({ one, many }) => ({
   }),
   localizations: many(articleLocalizations),
   sources: many(articleSources),
+  heroImageCandidate: one(articleHeroImageCandidates),
   pipelineRuns: many(pipelineRuns),
 }));
 
@@ -79,6 +80,13 @@ export const articleSourcesRelations = relations(articleSources, ({ one }) => ({
   sourceItem: one(sourceItems, {
     fields: [articleSources.sourceItemId],
     references: [sourceItems.id],
+  }),
+}));
+
+export const articleHeroImageCandidatesRelations = relations(articleHeroImageCandidates, ({ one }) => ({
+  article: one(articles, {
+    fields: [articleHeroImageCandidates.articleId],
+    references: [articles.id],
   }),
 }));
 

@@ -1,8 +1,8 @@
 import { siteConfig } from "@topicpress/config";
-import type { PublicArticleDetail, PublicArticleDetailResult } from "@topicpress/worker";
 import type { Metadata } from "next";
 
 import { getLocalePathSegment, isAppLocale, resolveAppLocale, type AppLocale } from "@/i18n/routing";
+import type { PublicArticleDetail, WebPublicArticleDetailResult } from "@/lib/public-article-detail";
 
 const articleSlugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const articleMetadataSiteSuffix = `| ${siteConfig.identity.name}`;
@@ -63,7 +63,7 @@ export function isArticleSlugSegment(slug: string): boolean {
 
 export function getPublicArticleDetailMetadata(
   locale: AppLocale,
-  result: PublicArticleDetailResult,
+  result: WebPublicArticleDetailResult,
 ): Metadata | null {
   if (result.kind === "not_found") {
     return null;

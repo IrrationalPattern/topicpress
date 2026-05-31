@@ -1,0 +1,169 @@
+id: "T003"
+title: "Add OpenAI image provider"
+type: "implementation"
+milestone: "m5-5-generated-article-hero-images"
+target_milestone: "m5-5-generated-article-hero-images"
+status: "implemented"
+owner: "implementation"
+actor: "backend_developer"
+assigned_role: "backend_developer"
+priority: "high"
+risk: "high"
+
+related_specs:
+  - "docs/infrastructure/secrets.md"
+  - "docs/architecture/adr/ADR-007-generated-article-hero-images.md"
+  - "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+
+depends_on: ["T001"]
+blocks: ["T004", "T007"]
+parallel_group: "B"
+
+parallelization:
+  can_run_in_parallel: true
+  parallel_safety_notes:
+    - "May run in parallel with T002 because package/ai and package/db write scopes are disjoint."
+  conflict_check_required: true
+  conflict_check_fields:
+    - "depends_on"
+    - "blocks"
+    - "write_scope.allowed_paths"
+    - "contracts.required_existing"
+    - "contracts.may_update"
+
+input_context:
+  must_read:
+    - "AGENTS.md"
+    - "docs/PROJECT_STATE.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/task-graph.yaml"
+    - "docs/milestones/m5-5-generated-article-hero-images/tasks/T001-finalize-generated-image-contract.yaml"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T001-finalize-generated-image-contract-handoff.md"
+    - "docs/architecture/adr/ADR-007-generated-article-hero-images.md"
+    - "docs/infrastructure/secrets.md"
+  should_read:
+    - "packages/ai/src/openai-provider.ts"
+    - "packages/ai/src/provider.ts"
+    - "packages/ai/src/types.ts"
+    - "packages/ai/src/prompt.ts"
+    - "packages/ai/src/validation.ts"
+  relevant_docs:
+    - "https://developers.openai.com/api/docs/guides/image-generation"
+    - "https://developers.openai.com/api/reference/resources/images"
+    - "https://developers.openai.com/api/docs/models/gpt-image-1.5"
+  relevant_files:
+    - "packages/ai/src/"
+    - "packages/ai/test/"
+    - ".env.example"
+  do_not_read_initially: []
+
+write_scope:
+  mode: "bounded"
+  allowed_paths:
+    - "packages/ai/src/"
+    - "packages/ai/test/"
+    - "packages/ai/package.json"
+    - ".env.example"
+    - "docs/infrastructure/secrets.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/"
+  forbidden_paths:
+    - "apps/web/"
+    - "apps/worker/src/"
+    - "packages/db/src/schema/"
+    - "supabase/"
+  notes:
+    - "Do not run live OpenAI calls unless the operator has configured local secrets and explicitly requested live validation."
+
+scope:
+  include:
+    - "Add a separate OpenAI image provider contract in `packages/ai`."
+    - "Verify official OpenAI docs and account/model availability at implementation time."
+    - "Pin `TOPICPRESS_OPENAI_IMAGE_MODEL`, defaulting to `gpt-image-1.5` if available."
+    - "Use the Image API generation endpoint for one image from one prompt."
+    - "Decode GPT image model base64 response data into binary image bytes."
+    - "Validate content type, output format, dimensions metadata when available, and error handling."
+    - "Add fixture/mock tests for success, refusal/error, timeout, missing key, missing live gate, invalid base64, and model config."
+    - "Document environment variables and organization-verification dependency."
+  exclude:
+    - "Database persistence."
+    - "Supabase Storage writes."
+    - "Worker orchestration."
+    - "Frontend UI."
+    - "Fallback providers."
+
+expected_changes:
+  code:
+    required: true
+    paths:
+      - "packages/ai/src/"
+  tests:
+    required: true
+    paths:
+      - "packages/ai/test/"
+      - "packages/ai/package.json"
+  docs:
+    required: true
+    paths:
+      - "docs/infrastructure/secrets.md"
+      - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T003-add-openai-image-provider-handoff.md"
+  config:
+    required: true
+    paths:
+      - ".env.example"
+
+contracts:
+  required_existing:
+    - "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+    - "docs/architecture/adr/ADR-007-generated-article-hero-images.md"
+  may_update:
+    - "packages/ai/src/"
+    - "packages/ai/test/"
+    - "packages/ai/package.json"
+    - ".env.example"
+    - "docs/infrastructure/secrets.md"
+  must_not_update:
+    - "apps/web/"
+    - "apps/worker/src/"
+    - "packages/db/src/schema/"
+    - "supabase/"
+
+acceptance_criteria:
+  - "Provider uses OpenAI Image API for one generated image from one prompt."
+  - "Provider is OpenAI-only and does not add fallback providers."
+  - "T003 handoff records official docs consulted and the model selected for `TOPICPRESS_OPENAI_IMAGE_MODEL`."
+  - "Default model resolves to `gpt-image-1.5` only if verified available; no nonverified future model name is hard-coded."
+  - "GPT image model base64 response data is decoded server-side and validated."
+  - "Configuration errors are clear for missing API key, live gate, model, timeout, or organization verification failures."
+  - "No raw API keys, provider responses containing secrets, or private base URLs are persisted or documented."
+  - "`pnpm --filter @topicpress/ai test` covers provider behavior."
+
+validation:
+  package_commands:
+    - "pnpm --filter @topicpress/ai test"
+  manual_checks:
+    - "Confirm official OpenAI docs are cited in the handoff."
+    - "Confirm tests do not require live network access."
+    - "Confirm `.env.example` contains placeholder-only values."
+
+handoff:
+  required: true
+  file: "docs/milestones/m5-5-generated-article-hero-images/handoffs/T003-add-openai-image-provider-handoff.md"
+
+qa:
+  required: true
+  reviewer_role: "qa_reviewer"
+  focus_areas:
+    - "Provider selection and model pinning."
+    - "Secret gating."
+    - "Base64 decoding."
+    - "Error sanitization."
+
+completion:
+  required_outputs:
+    - "AI provider code"
+    - "AI tests"
+    - "Env docs"
+    - "Validation evidence"
+    - "Handoff file"
+  status_after_agent_finishes: "implemented"
+  status_after_qa_passes: "qa_passed"

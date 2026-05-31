@@ -1,0 +1,143 @@
+id: "T007"
+title: "QA generated hero images"
+type: "qa"
+milestone: "m5-5-generated-article-hero-images"
+target_milestone: "m5-5-generated-article-hero-images"
+status: "qa_passed"
+owner: "qa"
+actor: "qa_reviewer"
+assigned_role: "qa_reviewer"
+priority: "high"
+risk: "high"
+
+related_specs:
+  - "docs/PROJECT_STATE.md"
+  - "docs/database/schema.md"
+  - "docs/frontend/routes.md"
+  - "docs/infrastructure/secrets.md"
+  - "docs/qa/test-strategy.md"
+  - "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+
+depends_on: ["T004", "T005", "T006"]
+blocks: ["T008"]
+parallel_group: "F"
+
+parallelization:
+  can_run_in_parallel: false
+  parallel_safety_notes:
+    - "Final QA requires implementation handoffs from data/provider/generation/review/frontend tasks."
+  conflict_check_required: true
+
+input_context:
+  must_read:
+    - "AGENTS.md"
+    - "docs/PROJECT_STATE.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/task-graph.yaml"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T002-add-hero-image-candidate-data-model-handoff.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T003-add-openai-image-provider-handoff.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T004-generate-and-store-hero-image-candidate-handoff.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T005-review-approval-and-publish-gate-handoff.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T006-editorial-review-image-ui-handoff.md"
+    - "docs/qa/test-strategy.md"
+  should_read:
+    - "docs/database/schema.md"
+    - "docs/frontend/routes.md"
+    - "docs/infrastructure/secrets.md"
+  relevant_files: []
+
+write_scope:
+  mode: "docs-only"
+  allowed_paths:
+    - "docs/milestones/m5-5-generated-article-hero-images/qa-report.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/"
+  forbidden_paths:
+    - "apps/"
+    - "packages/"
+    - "supabase/"
+
+scope:
+  include:
+    - "Run required package and database validation commands."
+    - "Verify one current generated hero image record per article."
+    - "Verify generation/regeneration stores a public object and updates `articles.hero_image_url`."
+    - "Verify regeneration is explicit and does not run on page load or publish."
+    - "Verify failed image generation does not block article publication."
+    - "Verify internal review UI and public article disclosure behavior."
+    - "Verify no secret or raw provider response leakage in docs, logs, UI, or persisted metadata."
+    - "Record root build caveat if root build is skipped."
+  exclude:
+    - "Code fixes."
+    - "Schema changes."
+    - "New product decisions beyond pass/fail/blocker classification."
+
+expected_changes:
+  code:
+    required: false
+    paths: []
+  tests:
+    required: false
+    paths: []
+  docs:
+    required: true
+    paths:
+      - "docs/milestones/m5-5-generated-article-hero-images/qa-report.md"
+      - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T007-qa-generated-hero-images-handoff.md"
+
+contracts:
+  required_existing:
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T004-generate-and-store-hero-image-candidate-handoff.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T005-review-approval-and-publish-gate-handoff.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T006-editorial-review-image-ui-handoff.md"
+  may_update:
+    - "docs/milestones/m5-5-generated-article-hero-images/qa-report.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/"
+  must_not_update:
+    - "apps/"
+    - "packages/"
+    - "supabase/"
+
+acceptance_criteria:
+  - "QA report records exact commands, status, and relevant output summaries."
+  - "Public storage and regeneration behavior are verified or blockers are documented."
+  - "Generated image regeneration flow is verified end-to-end."
+  - "Public article rendering is verified for generated-image and no-image cases."
+  - "Disclosure label is verified or product rejection is recorded."
+  - "No high-severity finding remains unresolved before T008."
+
+validation:
+  package_commands:
+    - "pnpm --filter @topicpress/db build"
+    - "pnpm db:check"
+    - "pnpm db:migrate"
+    - "pnpm --filter @topicpress/ai test"
+    - "pnpm --filter @topicpress/worker test"
+    - "pnpm --filter @topicpress/worker build"
+    - "pnpm --filter @topicpress/web test"
+    - "pnpm --filter @topicpress/web lint"
+    - "pnpm --filter @topicpress/web typecheck"
+  manual_checks:
+    - "Browser/dev-route smoke for internal review detail current image and regenerate states."
+    - "Browser/dev-route smoke for public article generated image disclosure."
+    - "Inspect persisted image metadata and pipeline payload summaries for secret leakage."
+
+handoff:
+  required: true
+  file: "docs/milestones/m5-5-generated-article-hero-images/handoffs/T007-qa-generated-hero-images-handoff.md"
+
+qa:
+  required: true
+  reviewer_role: "qa_reviewer"
+  focus_areas:
+    - "End-to-end regeneration."
+    - "Storage boundary."
+    - "Provider config."
+    - "Public rendering."
+
+completion:
+  required_outputs:
+    - "QA report"
+    - "Validation evidence"
+    - "Handoff file"
+  status_after_agent_finishes: "implemented"
+  status_after_qa_passes: "qa_passed"

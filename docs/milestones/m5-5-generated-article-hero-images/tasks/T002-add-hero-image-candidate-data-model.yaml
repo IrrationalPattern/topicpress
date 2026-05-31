@@ -1,0 +1,167 @@
+id: "T002"
+title: "Revise hero image metadata model"
+type: "database"
+milestone: "m5-5-generated-article-hero-images"
+target_milestone: "m5-5-generated-article-hero-images"
+status: "implemented"
+owner: "implementation"
+actor: "data_agent"
+assigned_role: "data_agent"
+priority: "high"
+risk: "high"
+
+related_specs:
+  - "docs/database/schema.md"
+  - "docs/infrastructure/secrets.md"
+  - "docs/architecture/adr/ADR-007-generated-article-hero-images.md"
+  - "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+
+depends_on: ["T001"]
+blocks: ["T004", "T005", "T006", "T007"]
+parallel_group: "B"
+
+parallelization:
+  can_run_in_parallel: true
+  parallel_safety_notes:
+    - "May run in parallel with T003 because package/db and package/ai write scopes are disjoint."
+  conflict_check_required: true
+  conflict_check_fields:
+    - "depends_on"
+    - "blocks"
+    - "write_scope.allowed_paths"
+    - "contracts.required_existing"
+    - "contracts.may_update"
+
+input_context:
+  must_read:
+    - "AGENTS.md"
+    - "docs/PROJECT_STATE.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/task-graph.yaml"
+    - "docs/milestones/m5-5-generated-article-hero-images/tasks/T001-finalize-generated-image-contract.yaml"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T001-finalize-generated-image-contract-handoff.md"
+    - "docs/architecture/adr/ADR-007-generated-article-hero-images.md"
+    - "docs/database/schema.md"
+    - "docs/infrastructure/secrets.md"
+  should_read:
+    - "packages/db/src/schema/articles.ts"
+    - "packages/db/src/schema/relations.ts"
+    - "packages/db/src/schema/index.ts"
+    - "supabase/migrations/0000_youthful_sentinels.sql"
+    - "supabase/migrations/meta/0000_snapshot.json"
+  relevant_docs: []
+  relevant_files:
+    - "packages/db/src/schema/articles.ts"
+    - "packages/db/src/schema/relations.ts"
+    - "packages/db/src/schema/index.ts"
+    - "supabase/migrations/"
+  do_not_read_initially: []
+
+write_scope:
+  mode: "bounded"
+  allowed_paths:
+    - "packages/db/src/schema/articles.ts"
+    - "packages/db/src/schema/relations.ts"
+    - "packages/db/src/schema/index.ts"
+    - "supabase/migrations/"
+    - "supabase/migrations/meta/"
+    - "docs/database/schema.md"
+    - "docs/infrastructure/secrets.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/"
+  forbidden_paths:
+    - "apps/web/"
+    - "apps/worker/src/"
+    - "packages/ai/src/"
+  notes:
+    - "Do not implement runtime generation or review behavior in this task."
+
+scope:
+  include:
+    - "Revise the existing hero image metadata schema away from private candidate approval semantics."
+    - "Keep or repurpose `article_hero_image_candidates` only if it remains the smallest safe migration path."
+    - "Enforce at most one current generated hero image record per article for MVP."
+    - "Allow a successfully generated current image to carry a public URL immediately."
+    - "Remove or relax constraints that require `public_url` only on approved candidates."
+    - "Document the single public `article-hero-images` bucket and remove the private candidate bucket from the target contract."
+    - "Update database/secrets docs for current-image metadata and storage boundary."
+  exclude:
+    - "OpenAI provider implementation."
+    - "Supabase Storage client implementation beyond schema/storage-contract docs."
+    - "Worker generation/review/publish services."
+    - "Frontend UI."
+
+expected_changes:
+  code:
+    required: true
+    paths:
+      - "packages/db/src/schema/articles.ts"
+      - "packages/db/src/schema/relations.ts"
+      - "packages/db/src/schema/index.ts"
+      - "supabase/migrations/"
+  tests:
+    required: false
+    paths: []
+  docs:
+    required: true
+    paths:
+      - "docs/database/schema.md"
+      - "docs/infrastructure/secrets.md"
+      - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T002-add-hero-image-candidate-data-model-handoff.md"
+  config:
+    required: false
+    paths: []
+
+contracts:
+  required_existing:
+    - "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+    - "docs/architecture/adr/ADR-007-generated-article-hero-images.md"
+  may_update:
+    - "packages/db/src/schema/articles.ts"
+    - "packages/db/src/schema/relations.ts"
+    - "packages/db/src/schema/index.ts"
+    - "supabase/migrations/"
+    - "docs/database/schema.md"
+    - "docs/infrastructure/secrets.md"
+  must_not_update:
+    - "apps/web/"
+    - "apps/worker/src/"
+    - "packages/ai/src/"
+
+acceptance_criteria:
+  - "Hero image metadata is represented in Drizzle schema and migration SQL."
+  - "The metadata table references `articles.id` and enforces one current generated image record per article."
+  - "A successful generated image may carry a public URL immediately."
+  - "Fields capture provider, model, prompt hash, style policy, public storage bucket/path, content type, dimensions, size, public URL, generation metadata, and timestamps."
+  - "No real secrets, signed URLs, API keys, or service-role values are stored or documented."
+  - "Database and secrets docs describe the new table and storage boundary."
+
+validation:
+  package_commands:
+    - "pnpm --filter @topicpress/db build"
+    - "pnpm db:check"
+    - "pnpm db:migrate"
+  manual_checks:
+    - "Inspect generated migration for table, constraints, indexes, removal of private-candidate-only checks, and no unrelated schema churn."
+    - "Confirm docs match the committed schema."
+
+handoff:
+  required: true
+  file: "docs/milestones/m5-5-generated-article-hero-images/handoffs/T002-add-hero-image-candidate-data-model-handoff.md"
+
+qa:
+  required: true
+  reviewer_role: "qa_reviewer"
+  focus_areas:
+    - "Schema integrity."
+    - "Migration reproducibility."
+    - "One-current-image invariant."
+    - "Secret-safe public storage metadata."
+
+completion:
+  required_outputs:
+    - "Schema and migration changes"
+    - "Docs updates"
+    - "Validation evidence"
+    - "Handoff file"
+  status_after_agent_finishes: "implemented"
+  status_after_qa_passes: "qa_passed"

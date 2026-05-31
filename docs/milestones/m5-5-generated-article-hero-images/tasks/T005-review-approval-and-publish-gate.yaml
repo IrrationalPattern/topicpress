@@ -1,0 +1,142 @@
+id: "T005"
+title: "Remove image approval gate and fix publish behavior"
+type: "backend"
+milestone: "m5-5-generated-article-hero-images"
+target_milestone: "m5-5-generated-article-hero-images"
+status: "implemented"
+owner: "implementation"
+actor: "backend_developer"
+assigned_role: "backend_developer"
+priority: "high"
+risk: "high"
+
+related_specs:
+  - "docs/architecture/adr/ADR-005-manual-review-before-publication.md"
+  - "docs/architecture/adr/ADR-007-generated-article-hero-images.md"
+  - "docs/database/schema.md"
+  - "docs/frontend/routes.md"
+  - "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+
+depends_on: ["T002", "T004"]
+blocks: ["T006", "T007"]
+parallel_group: "D"
+
+parallelization:
+  can_run_in_parallel: false
+  parallel_safety_notes:
+    - "Defines DTOs/actions consumed by T006."
+  conflict_check_required: true
+
+input_context:
+  must_read:
+    - "AGENTS.md"
+    - "docs/PROJECT_STATE.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/task-graph.yaml"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T002-add-hero-image-candidate-data-model-handoff.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T004-generate-and-store-hero-image-candidate-handoff.md"
+  should_read:
+    - "apps/worker/src/article-review/"
+    - "apps/worker/src/article-publishing/"
+    - "apps/web/src/lib/article-review.ts"
+  relevant_files:
+    - "apps/worker/src/article-review/"
+    - "apps/worker/src/article-publishing/"
+    - "apps/worker/test/"
+
+write_scope:
+  mode: "bounded"
+  allowed_paths:
+    - "apps/worker/src/article-review/"
+    - "apps/worker/src/article-publishing/"
+    - "apps/worker/src/"
+    - "apps/worker/test/"
+    - "apps/worker/package.json"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/"
+  forbidden_paths:
+    - "apps/web/"
+    - "packages/db/src/schema/"
+    - "supabase/migrations/"
+
+scope:
+  include:
+    - "Expose current hero image metadata in internal review DTOs without leaking secrets or raw provider responses."
+    - "Remove the separate approve/reject image candidate service requirement from the MVP flow."
+    - "Remove approval-time copy/promotion from private storage to public storage."
+    - "Ensure `articles.hero_image_url` is set by successful generation/regeneration, not by an image approval step."
+    - "Ensure publication may proceed without a generated image."
+    - "Ensure generated image presence or absence does not block review-to-ready or ready-to-published transitions."
+    - "Add backend tests for text-only publish, generated-image publish, failed generation metadata, and no accidental promotion behavior."
+  exclude:
+    - "Frontend UI implementation."
+    - "Public article component changes."
+    - "Schema changes."
+    - "Auth/RLS expansion beyond what existing internal review actions require."
+
+expected_changes:
+  code:
+    required: true
+    paths:
+      - "apps/worker/src/article-review/"
+      - "apps/worker/src/article-publishing/"
+      - "apps/worker/src/"
+  tests:
+    required: true
+    paths:
+      - "apps/worker/test/"
+      - "apps/worker/package.json"
+  docs:
+    required: true
+    paths:
+      - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T005-review-approval-and-publish-gate-handoff.md"
+
+contracts:
+  required_existing:
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T004-generate-and-store-hero-image-candidate-handoff.md"
+  may_update:
+    - "apps/worker/src/article-review/"
+    - "apps/worker/src/article-publishing/"
+    - "apps/worker/src/"
+    - "apps/worker/test/"
+  must_not_update:
+    - "apps/web/"
+    - "packages/db/src/schema/"
+    - "supabase/migrations/"
+
+acceptance_criteria:
+  - "No image approval is required before an article can become ready or published."
+  - "Publication may proceed when `articles.hero_image_url` is null."
+  - "Publication may proceed when `articles.hero_image_url` points to a generated public image."
+  - "Publication does not trigger image generation, regeneration, or storage writes by side effect."
+  - "Backend DTOs provide enough current-image data for T006 UI while preserving secret boundaries."
+  - "Worker tests cover text-only publish, generated-image publish, and failed-generation visibility."
+
+validation:
+  package_commands:
+    - "pnpm --filter @topicpress/worker test"
+    - "pnpm --filter @topicpress/worker build"
+  manual_checks:
+    - "Confirm publish does not call image generation or storage."
+    - "Confirm failed image generation does not block article publication."
+
+handoff:
+  required: true
+  file: "docs/milestones/m5-5-generated-article-hero-images/handoffs/T005-review-approval-and-publish-gate-handoff.md"
+
+qa:
+  required: true
+  reviewer_role: "qa_reviewer"
+  focus_areas:
+    - "No image approval gate."
+    - "Text-only publish."
+    - "Publish interaction."
+    - "Storage boundary."
+
+completion:
+  required_outputs:
+    - "Review/publish service changes"
+    - "Worker tests"
+    - "Validation evidence"
+    - "Handoff file"
+  status_after_agent_finishes: "implemented"
+  status_after_qa_passes: "qa_passed"

@@ -84,6 +84,58 @@ test("blocks ready articles with missing required fields and records validation 
   );
 });
 
+test("publishes ready article without a generated hero image", async () => {
+  const store = createMemoryArticlePublishingStore({
+    articles: [article({ status: "ready", heroImageUrl: null })],
+    heroImageCandidates: [],
+  });
+
+  const result = await publishArticleWithStore(
+    store,
+    { articleId: "article-1" },
+    { now: publishedAt },
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.outcome, "published");
+  assert.equal(result.article.heroImageUrl, null);
+  assert.equal(store.articles[0].status, "published");
+  assert.equal(store.publishCalls, 1);
+});
+
+test("publishes ready article when generated image metadata is failed", async () => {
+  const store = createMemoryArticlePublishingStore({
+    articles: [article({ status: "ready", heroImageUrl: null })],
+    heroImageCandidates: [heroImageCandidate({ status: "failed", publicUrl: null })],
+  });
+
+  const result = await publishArticleWithStore(
+    store,
+    { articleId: "article-1" },
+    { now: publishedAt },
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.outcome, "published");
+  assert.equal(store.publishCalls, 1);
+});
+
+test("allows ready publish when the generated candidate matches the public hero URL", async () => {
+  const store = createMemoryArticlePublishingStore({
+    articles: [article({ status: "ready" })],
+  });
+
+  const result = await publishArticleWithStore(
+    store,
+    { articleId: "article-1" },
+    { now: publishedAt },
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.outcome, "published");
+  assert.equal(result.article.heroImageUrl, "https://cdn.example.test/articles/article-1/candidate-1.webp");
+});
+
 test("treats already published articles as idempotent and preserves publishedAt", async () => {
   const store = createMemoryArticlePublishingStore({
     articles: [article({ status: "published", publishedAt: originalPublishedAt })],
@@ -104,6 +156,24 @@ test("treats already published articles as idempotent and preserves publishedAt"
   assert.equal(result.pipelineRun.status, "succeeded");
   assert.equal(result.pipelineRun.payload.outcome, "already_published");
   assert.equal(result.pipelineRun.payload.alreadyPublished, true);
+});
+
+test("preserves already published idempotency for legacy articles without generated hero images", async () => {
+  const store = createMemoryArticlePublishingStore({
+    articles: [article({ status: "published", publishedAt: originalPublishedAt, heroImageUrl: null })],
+    heroImageCandidates: [],
+  });
+
+  const result = await publishArticleWithStore(
+    store,
+    { articleId: "article-1" },
+    { now: publishedAt },
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.outcome, "already_published");
+  assert.equal(result.article.publishedAt, originalPublishedAt);
+  assert.equal(store.publishCalls, 0);
 });
 
 test("records not_found publish attempts without unsafe article references", async () => {
@@ -171,6 +241,9 @@ function createMemoryArticlePublishingStore(overrides = {}) {
   const articles = (overrides.articles ?? [article({ status: "ready" })]).map((row) => ({ ...row }));
   const localizations = (overrides.localizations ?? [localization()]).map((row) => ({ ...row }));
   const sourceLineage = (overrides.sourceLineage ?? [lineage()]).map((row) => ({ ...row }));
+  const heroImageCandidates = (overrides.heroImageCandidates ?? [heroImageCandidate()]).map((row) => ({
+    ...row,
+  }));
   const pipelineRuns = [];
   let publishCalls = 0;
   let nextRunId = 1;
@@ -205,6 +278,7 @@ function createMemoryArticlePublishingStore(overrides = {}) {
         sources: sourceLineage
           .filter((row) => row.articleId === articleId)
           .map(({ articleId: _articleId, ...row }) => ({ ...row })),
+        heroImageCandidate: heroImageCandidates.find((row) => row.articleId === articleId) ?? null,
         articleIdsWithSameSlug: articles
           .filter((row) => row.slug === currentArticle.slug)
           .map((row) => row.id),
@@ -281,6 +355,7 @@ function createMemoryArticlePublishingStore(overrides = {}) {
     articles,
     localizations,
     sourceLineage,
+    heroImageCandidates,
     pipelineRuns,
     get publishCalls() {
       return publishCalls;
@@ -296,6 +371,7 @@ function article(overrides = {}) {
     categoryId: "category-news",
     slug: "review-gated-publishing",
     status: "ready",
+    heroImageUrl: "https://cdn.example.test/articles/article-1/candidate-1.webp",
     primaryLocale: "en-GB",
     publishedAt: null,
     reviewNotes: null,
@@ -305,6 +381,33 @@ function article(overrides = {}) {
       mode: "fixture",
       locale: "en-GB",
     },
+    createdAt,
+    updatedAt: createdAt,
+    ...overrides,
+  };
+}
+
+function heroImageCandidate(overrides = {}) {
+  return {
+    id: "candidate-1",
+    articleId: "article-1",
+    status: "generated",
+    provider: "openai",
+    model: "fixture-image-model",
+    prompt: "System:\nCreate one review-gated hero image candidate.",
+    promptHash: "fixture-prompt-hash",
+    stylePolicy: "editorial_illustration",
+    storageBucket: "article-hero-images",
+    storagePath: "articles/article-1/candidate-1.webp",
+    contentType: "image/webp",
+    width: 1536,
+    height: 1024,
+    sizeBytes: 5,
+    publicUrl: "https://cdn.example.test/articles/article-1/candidate-1.webp",
+    reviewNotes: "Approved.",
+    generationMetadata: {},
+    generatedAt: createdAt,
+    reviewedAt: createdAt,
     createdAt,
     updatedAt: createdAt,
     ...overrides,

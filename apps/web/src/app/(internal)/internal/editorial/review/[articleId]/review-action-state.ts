@@ -3,6 +3,7 @@ export type ReviewActionIntent =
   | "approve_ready"
   | "mark_failed"
   | "publish"
+  | "generate_hero_image"
   | "hold";
 
 export interface ReviewActionIssue {

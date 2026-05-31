@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 
-import type { PublicArticleDetail } from "@topicpress/worker";
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -8,6 +7,7 @@ import {
   ArticleDetailContent,
   getPlainTextParagraphs,
 } from "../src/components/public/article-detail-content.tsx";
+import type { PublicArticleDetail } from "../src/lib/public-article-detail.ts";
 
 function runTest(name: string, testBody: () => void): void {
   testBody();
@@ -90,4 +90,44 @@ runTest("article detail does not render deferred right-rail or attribution place
   assert.doesNotMatch(html, /Newsletter/i);
   assert.doesNotMatch(html, /Source attribution/i);
   assert.doesNotMatch(html, /Advertisement/i);
+});
+
+runTest("article detail does not infer generated-image disclosure without public metadata", () => {
+  const html = renderToStaticMarkup(
+    <ArticleDetailContent
+      article={article}
+      categoryHref="/en-gb/categories/news"
+      categoryLabel="Category"
+      dateLabel="Published"
+      locale="en-GB"
+    />,
+  );
+
+  assert.doesNotMatch(html, /AI-generated illustration/);
+  assert.doesNotMatch(html, /prompt/i);
+  assert.doesNotMatch(html, /candidate status/i);
+});
+
+runTest("article detail discloses generated hero images when public provenance is present", () => {
+  const html = renderToStaticMarkup(
+    <ArticleDetailContent
+      article={{
+        ...article,
+        heroImageUrl: "https://example.com/generated-hero.webp",
+        heroImageDisclosure: {
+          kind: "ai_generated",
+          label: "AI-generated illustration",
+        },
+      }}
+      categoryHref="/en-gb/categories/news"
+      categoryLabel="Category"
+      dateLabel="Published"
+      locale="en-GB"
+    />,
+  );
+
+  assert.match(html, /AI-generated illustration/);
+  assert.match(html, /generated-hero\.webp/);
+  assert.doesNotMatch(html, /prompt/i);
+  assert.doesNotMatch(html, /candidate status/i);
 });

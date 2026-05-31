@@ -1,0 +1,140 @@
+id: "T008"
+title: "Consolidate docs and closeout"
+type: "knowledge_consolidation"
+milestone: "m5-5-generated-article-hero-images"
+target_milestone: "m5-5-generated-article-hero-images"
+status: "implemented"
+owner: "docs"
+actor: "knowledge_curator"
+assigned_role: "knowledge_curator"
+priority: "medium"
+risk: "medium"
+
+related_specs:
+  - "docs/PROJECT_STATE.md"
+  - "docs/database/schema.md"
+  - "docs/frontend/routes.md"
+  - "docs/infrastructure/secrets.md"
+  - "docs/qa/test-strategy.md"
+  - "docs/milestones/m5-5-generated-article-hero-images/qa-report.md"
+
+depends_on: ["T007"]
+blocks: []
+parallel_group: "G"
+
+parallelization:
+  can_run_in_parallel: false
+  parallel_safety_notes:
+    - "Depends on final QA outcome."
+  conflict_check_required: true
+
+input_context:
+  must_read:
+    - "AGENTS.md"
+    - "docs/PROJECT_STATE.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/plan.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/task-graph.yaml"
+    - "docs/milestones/m5-5-generated-article-hero-images/qa-report.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T007-qa-generated-hero-images-handoff.md"
+  should_read:
+    - "docs/database/schema.md"
+    - "docs/frontend/routes.md"
+    - "docs/infrastructure/secrets.md"
+    - "docs/qa/test-strategy.md"
+    - "docs/architecture/adr/ADR-007-generated-article-hero-images.md"
+  relevant_files: []
+
+write_scope:
+  mode: "docs-only"
+  allowed_paths:
+    - "docs/PROJECT_STATE.md"
+    - "docs/database/schema.md"
+    - "docs/frontend/routes.md"
+    - "docs/infrastructure/secrets.md"
+    - "docs/qa/test-strategy.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/"
+  forbidden_paths:
+    - "apps/"
+    - "packages/"
+    - "supabase/"
+
+scope:
+  include:
+    - "Update canonical docs to reflect delivered generated hero image behavior if QA passes."
+    - "Record residual risks, accepted deviations, and known caveats."
+    - "Write milestone closeout."
+    - "Update `docs/PROJECT_STATE.md` current milestone/history."
+    - "Write a knowledge-consolidation handoff."
+  exclude:
+    - "Production code fixes."
+    - "Schema or migration edits."
+    - "Closing milestone while high-severity QA findings remain."
+
+expected_changes:
+  code:
+    required: false
+    paths: []
+  tests:
+    required: false
+    paths: []
+  docs:
+    required: true
+    paths:
+      - "docs/PROJECT_STATE.md"
+      - "docs/database/schema.md"
+      - "docs/frontend/routes.md"
+      - "docs/infrastructure/secrets.md"
+      - "docs/qa/test-strategy.md"
+      - "docs/milestones/m5-5-generated-article-hero-images/closeout.md"
+      - "docs/milestones/m5-5-generated-article-hero-images/handoffs/T008-consolidate-docs-and-closeout-handoff.md"
+
+contracts:
+  required_existing:
+    - "docs/milestones/m5-5-generated-article-hero-images/qa-report.md"
+  may_update:
+    - "docs/PROJECT_STATE.md"
+    - "docs/database/schema.md"
+    - "docs/frontend/routes.md"
+    - "docs/infrastructure/secrets.md"
+    - "docs/qa/test-strategy.md"
+    - "docs/milestones/m5-5-generated-article-hero-images/"
+  must_not_update:
+    - "apps/"
+    - "packages/"
+    - "supabase/"
+
+acceptance_criteria:
+  - "`docs/PROJECT_STATE.md` reflects whether M5.5 is complete, partial, or blocked."
+  - "`docs/database/schema.md` records the candidate table if implemented."
+  - "`docs/frontend/routes.md` records public hero image/disclosure behavior if implemented."
+  - "`docs/infrastructure/secrets.md` records final env/storage secret boundaries."
+  - "`docs/qa/test-strategy.md` records generated hero image validation expectations."
+  - "Milestone closeout records final status, validation summary, residual risks, and next recommendation."
+  - "No code, package, schema, migration, or infrastructure files are edited."
+
+validation:
+  package_commands: []
+  manual_checks:
+    - "Check all docs changed by this task for consistency with QA report and project state."
+    - "Run `git diff --check -- docs`."
+
+handoff:
+  required: true
+  file: "docs/milestones/m5-5-generated-article-hero-images/handoffs/T008-consolidate-docs-and-closeout-handoff.md"
+
+qa:
+  required: true
+  reviewer_role: "qa_reviewer"
+  focus_areas:
+    - "Docs consistency."
+    - "Project state accuracy."
+    - "Residual risk tracking."
+    - "Closeout completeness."
+
+completion:
+  required_outputs:
+    - "Docs updates"
+    - "Milestone closeout"
+    - "Handoff file"
+  status_after_agent_finishes: "implemented"
+  status_after_qa_passes: "qa_passed"

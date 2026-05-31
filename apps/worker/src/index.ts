@@ -14,6 +14,7 @@ export * from "./cluster-generation-run.js";
 export * from "./ingestion-run.js";
 export * from "./ingestion-policy.js";
 export * from "./source-item-persistence.js";
+export * from "./hero-image-candidates.js";
 
 export const workerPackageName = "@topicpress/worker";
 

@@ -1,6 +1,6 @@
 # Database Schema
 
-Updated: 2026-05-26
+Updated: 2026-06-01
 
 ## Sources Reviewed
 
@@ -9,6 +9,8 @@ Updated: 2026-05-26
 - ADRs under `docs/architecture/adr/`
 - Drizzle schema under `packages/db/src/schema/`
 - Applied migration `supabase/migrations/0000_youthful_sentinels.sql`
+- Applied M5.5 migration `supabase/migrations/0001_mysterious_jean_grey.sql`
+- Applied M5.5 amendment migration `supabase/migrations/20260528202412_amend_hero_image_public_regeneration.sql`
 - Imported Obsidian schema context from `Projects/Topicpress/02-specs/drizzle-schema-design.md`
 
 ## Purpose
@@ -44,6 +46,13 @@ The database stores operational rows needed by the worker and public renderer:
 - `ready`: review-approved content eligible for publication.
 - `published`: durable public content. Public rendering must also require non-null `published_at`.
 - `failed`: content that failed generation, review, validation, or publication.
+
+`article_hero_image_candidate_status`
+
+- `generated`: successful/current generated image metadata for the one current generated hero image per article. A generated row may carry a public URL immediately.
+- `failed`: failed image generation or storage, with secret-safe persisted metadata.
+
+M5.5 does not use a separate image approval status or promotion step. Article publication may proceed without a generated hero image.
 
 `source_item_status`
 
@@ -233,6 +242,42 @@ Indexes and constraints:
 - Unique: `article_sources_article_source_item_unique` on `(article_id, source_item_id)`.
 - Reverse lookup: `article_sources_source_item_id_idx`.
 
+### `article_hero_image_candidates`
+
+Generated hero image metadata for articles. M5.5 repurposes the table as the one-current-image metadata record for each article. Generated image binaries are stored in the public `article-hero-images` bucket, and successful generation/regeneration updates `articles.hero_image_url` to the same public URL stored in this table.
+
+Important columns:
+
+- `id` UUID primary key.
+- `article_id` references `articles.id`.
+- `status`: `generated` or `failed`; no image approval state is required before article publication.
+- `provider`, defaulting to `openai`, and `model`.
+- `prompt`, `prompt_hash`, and `style_policy`, defaulting to `editorial_illustration`.
+- `storage_bucket`, constrained to public bucket `article-hero-images`.
+- `storage_path`, `content_type`, `width`, `height`, and `size_bytes` for the generated image object when one exists.
+- `public_url` for the generated public image URL used to update `articles.hero_image_url`.
+- `review_notes`, `generation_metadata`, `generated_at`, nullable legacy `reviewed_at`, `created_at`, and `updated_at`.
+
+Indexes and constraints:
+
+- Unique: `article_hero_image_candidates_article_id_unique`, enforcing one current generated image metadata row per article.
+- Foreign key: `article_id` references `articles.id`.
+- Status filter: `article_hero_image_candidates_status_idx`.
+- `article_hero_image_candidates_public_url_generated_check` allows `public_url` only when status is `generated`.
+- `article_hero_image_candidates_provider_openai_check` constrains provider metadata to `openai`.
+- `article_hero_image_candidates_style_policy_check` constrains generated-image style to `editorial_illustration`.
+- `article_hero_image_candidates_storage_bucket_public_check` constrains storage to `article-hero-images`.
+- `article_hero_image_candidates_content_type_check` allows `image/png` or `image/webp` when content type is present.
+- Checks require positive dimensions and byte size when present.
+- Checks require non-empty `storage_bucket` and `prompt_hash`.
+
+Secret-safety contract:
+
+- `generation_metadata` may store sanitized provider/model/runtime summaries only.
+- Do not store API keys, Supabase service-role keys, raw provider responses containing secrets, or private signed URLs.
+- `storage_bucket` and `storage_path` identify generated image objects for server-side audit/regeneration workflows.
+- Public rendering still uses `articles.hero_image_url`; the article detail read may use a narrow server-side provenance read from this table only to decide whether to render generated-image disclosure.
+
 ### `pipeline_runs`
 
 Execution history and operational visibility for worker runs.
@@ -268,6 +313,7 @@ Indexes and constraints:
 - `articles` belongs to one `category`.
 - `articles` has many `article_localizations`.
 - `articles` has many `article_sources`.
+- `articles` has at most one `article_hero_image_candidates` row in M5.5.
 - `pipeline_runs` may reference one source, source item, story cluster, or article depending on run type and failure point.
 
 All foreign keys in the initial migration use `ON DELETE no action` and `ON UPDATE no action`. Deletion must therefore be explicit and ordered, and deactivation is preferred for config-synced registry rows.
@@ -280,8 +326,9 @@ Public pages must query only durable published content:
 - `articles.published_at is not null`
 - joined category is active where category context matters
 - matching requested-locale `article_localizations` rows or configured default-locale fallback rows for localized listing pages; required public fields must be usable after fallback
+- generated hero image metadata rows are not the primary public contract; public article pages render the image pointer in `articles.hero_image_url`
 
-The current public schema supports homepage and category listing routes. Article detail pages, sitemap, robots, archive, and structured article data are deferred public surfaces.
+The current public schema supports homepage, category listing, article detail, sitemap, and robots routes. Archive and structured article data are deferred public surfaces.
 
 ## Deferred Schema Items
 
